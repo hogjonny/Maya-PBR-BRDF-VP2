@@ -2,3 +2,24 @@
 A WIP Implementation of a Physically Plausible (PBR/PBS) HLSL Shader for the Maya Viewport 2.0
 
 ![alt tag](https://github.com/HogJonnyMaxPlay/Maya-PBR-BRDF-VP2/blob/master/images/mayaVP2_01.png)
+
+I have to give thanks ... there is a ton of useful information out on the web, all you have to do is start googling topics like PBR; you will find a myriad of papers, forum posts, tutorials, personal projects and the likes.  I did not create or invent anything here, I repurposed others work more-or-less (with whatever tweaks and changes made my implementation work.)
+
+Some help stands out more then others:
+https://github.com/derkreature
+https://github.com/derkreature/IBLBaker
+https://github.com/derkreature/ShaderBall
+
+http://www.filmicworlds.com/author/john-hable/
+http://filmicgames.com/
+
+http://www.alexandre-pestana.com/disney-principled-brdf-implementation/
+
+http://ruh.li/GraphicsCookTorrance.html
+
+https://disney-animation.s3.amazonaws.com/library/s2012_pbs_disney_brdf_notes_v2.pdf
+https://github.com/wdas/brdf/blob/master/src/brdfs/disney.brdf
+
+http://www.rorydriscoll.com/2013/11/22/physically-based-shading/
+
+And of course, thanks to eveyone who contributed to those guys project and inspirations...

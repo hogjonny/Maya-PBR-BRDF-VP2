@@ -6,6 +6,7 @@ A WIP Implementation of a Physically Plausible (PBR/PBS) HLSL Shader for the May
 I have to give thanks ... there is a ton of useful information out on the web, all you have to do is start googling topics like PBR; you will find a myriad of papers, forum posts, tutorials, personal projects and the likes.  I did not create or invent anything here, I repurposed others work more-or-less (with whatever tweaks and changes made my implementation work.)
 
 Some help stands out more then others:
+
 https://github.com/derkreature
 https://github.com/derkreature/IBLBaker
 https://github.com/derkreature/ShaderBall

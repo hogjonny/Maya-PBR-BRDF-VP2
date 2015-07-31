@@ -8,10 +8,13 @@ I have to give thanks ... there is a ton of useful information out on the web, a
 Some help stands out more then others:
 
 https://github.com/derkreature
+
 https://github.com/derkreature/IBLBaker
+
 https://github.com/derkreature/ShaderBall
 
 http://www.filmicworlds.com/author/john-hable/
+
 http://filmicgames.com/
 
 http://www.alexandre-pestana.com/disney-principled-brdf-implementation/
@@ -19,6 +22,7 @@ http://www.alexandre-pestana.com/disney-principled-brdf-implementation/
 http://ruh.li/GraphicsCookTorrance.html
 
 https://disney-animation.s3.amazonaws.com/library/s2012_pbs_disney_brdf_notes_v2.pdf
+
 https://github.com/wdas/brdf/blob/master/src/brdfs/disney.brdf
 
 http://www.rorydriscoll.com/2013/11/22/physically-based-shading/

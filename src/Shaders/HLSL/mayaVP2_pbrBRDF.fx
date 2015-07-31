@@ -4,7 +4,6 @@
 
 static const float INV_PI = ( 1.0 / PI );
 
-
 #define NumberOfMipMaps 0
 
 #define _3DSMAX_SPIN_MAX 99999
@@ -111,7 +110,7 @@ Texture2D AlbedoTexture
     string UIGroup = "Texture Inputs";
     string ResourceName = "";
     string UIWidget = "FilePicker";
-    string UIName = "Diffuse Map";
+    string UIName = "Albedo Map";
     string ResourceType = "2D"; 
     int mipmaplevels = NumberOfMipMaps;
     int UIOrder = 001;
@@ -178,7 +177,6 @@ Texture2D AmbOccTexure
     int UVEditorOrder = 6;
 >;
 
-/**
 TextureCube ReflectionTextureCube : environment
 <
     string UIGroup = "Texture Inputs";
@@ -188,7 +186,6 @@ TextureCube ReflectionTextureCube : environment
     string ResourceType = "Cube";
     int mipmaplevels = 0; // Use (or load) max number of mip map levels so we can use blurring
     int UIOrder = 007;
-    int UVEditorOrder = 7;
 >;
 
 TextureCube DiffuseIBLTextureCube : Environment
@@ -196,27 +193,22 @@ TextureCube DiffuseIBLTextureCube : Environment
     string UIGroup = "Texture Inputs";
     string ResourceName = "";
     string UIWidget = "FilePicker";
-    string UIName = "IBL Cube Map";
+    string UIName = "IBL / Irradiance CubeMap";
     string ResourceType = "Cube";   
     int mipmaplevels = 0; // Use (or load) max number of mip map levels so we can use blurring
-    int UIOrder = 008;
-    int UVEditorOrder = 8;
+    int UIOrder = 010;
 >;
-*/
 
-/**
 Texture2D BrdfTexture
 <
     string UIGroup = "Texture Inputs";
     string ResourceName = "";
     string UIWidget = "FilePicker";
-    string UIName = "dBRDF Map";
+    string UIName = "BRDF Map";
     string ResourceType = "2D";
-    int mipmaplevels = 0;
-    int UIOrder = 008;
-    int UVEditorOrder = 5;
+    int mipmaplevels = 1;
+    int UIOrder = 011;
 >;
-*/
 
 //------------------------------------
 // Shadow Maps
@@ -292,20 +284,33 @@ cbuffer UpdatePerObject : register(b1)
     //::begin parameters
 
     //color baseColor .82 .67 .16
-    float3 baseColor = {0.82f, 0.67f, 0.16f};
+    float3 baseColor
+	<
+		string UIGroup = "Base Properties"; 
+	> = {0.82f, 0.67f, 0.16f};
 
     //float metalness 0 1 0
-    float metalness = 0.0f;
+    float metalness
+	<
+		string UIGroup = "Base Properties"; 
+	>  = 0.0f;
 
     //float subsurface 0 1 0
-    float subsurface = 0.0f;
+    float subsurface
+	<
+		string UIGroup = "Base Properties"; 
+	>  = 0.0f;
 
     //float specular 0 1 .5
-    float specular = 0.5f;
+    float specular
+	<
+		string UIGroup = "Base Properties"; 
+	>  = 0.5f;
 
     //float roughness 0 1 .5
     float roughness
 	<
+		string UIGroup = "Base Properties"; 
         string UIWidget = "Slider";
         float UIMin = 0.001;
         float UISoftMax = 1.000;
@@ -313,40 +318,76 @@ cbuffer UpdatePerObject : register(b1)
 	> = {0.500f};
 
     //float specularTint 0 1 0
-    float specularTint = 0.0f;
+    float specularTint
+	<
+		string UIGroup = "Base Properties"; 
+	>  = 0.0f;
 
     //float anisotropic 0 1 0
-    float anisotropic = 0.0f;
+    float anisotropic
+	<
+		string UIGroup = "Base Properties"; 
+	>  = 0.0f;
 
     //float sheen 0 1 0
-    float sheen = 0.0f;
+    float sheen
+	<
+		string UIGroup = "Base Properties"; 
+	>  = 0.0f;
 
     //float sheenTint 0 1 .5
-    float sheenTint = 0.5f;
+    float sheenTint
+	<
+		string UIGroup = "Base Properties"; 
+	>  = 0.5f;
 
     //float clearcoat 0 1 0
-    float clearcoat = 0.0f;
+    float clearcoat
+	<
+		string UIGroup = "Base Properties"; 
+	>  = 0.0f;
 
     //float clearcoatGloss 0 1 1
-    float clearcoatGloss = 1.0f;
+    float clearcoatGloss
+	<
+		string UIGroup = "Base Properties"; 
+	>  = 1.0f;
 
     // My Parameters
-    bool highQualityBRDF
-    <
-        string UIName = "High Quality dBRDF";
-        int UIOrder = 0;
-    > = true;
-
     // new params for maps etc
-    bool useAlbedoMap = 1;
-    bool useNormalMap = 1;
-    bool useSpecularMap = 1;
-    bool useRoughnessMap = 1;
-    bool useMetalnessMap = 1;
-    bool useAmbOccMap = 0;
+    bool useAlbedoMap
+	<
+		string UIGroup = "Texture Inputs";
+	> = 1;
+    bool useNormalMap
+	<
+		string UIGroup = "Texture Inputs";
+	> = 1;
+    bool useSpecularMap
+	<
+		string UIGroup = "Texture Inputs";
+	> = 1;
+    bool useRoughnessMap
+	<
+		string UIGroup = "Texture Inputs";
+	> = 1;
+    bool useMetalnessMap
+	<
+		string UIGroup = "Texture Inputs";
+	> = 1;
+    bool useAmbOccMap
+	<
+		string UIGroup = "Texture Inputs";
+	> = 0;
 
-    bool useSpecularRGB = 0;
-    bool useSpecularMask = 0;
+    bool useSpecularRGB
+	<
+		string UIGroup = "Texture Inputs";
+	> = 0;
+    bool useSpecularMask
+	<
+		string UIGroup = "Texture Inputs";
+	> = 0;
 
     //::end parameters
 
@@ -355,7 +396,7 @@ cbuffer UpdatePerObject : register(b1)
     // ---------------------------------------------
     int NormalCoordsysX
     <                                              
-        string UIGroup = "Normal [DEBUG]";           
+        string UIGroup = "Normal Group";           
         string UIFieldNames = "Positive:Negative";      
         string UIName = "Normal X (Red) [*]";       
         int UIOrder = 207;                              
@@ -363,7 +404,7 @@ cbuffer UpdatePerObject : register(b1)
 
     int NormalCoordsysY      
     <                                                   
-        string UIGroup = "Normal [DEBUG]";           
+        string UIGroup = "Normal Group";           
         string UIFieldNames = "Positive:Negative";      
         string UIName = "Normal Y (Green) [*]"; 
         int UIOrder = 208;                              
@@ -371,7 +412,7 @@ cbuffer UpdatePerObject : register(b1)
 
     int NormalCoordsysZ      
     <                                                   
-        string UIGroup = "Normal [DEBUG]";           
+        string UIGroup = "Normal Group";           
         string UIFieldNames = "Positive:Negative";      
         string UIName = "Normal Z (Blue) [*]";  
         int UIOrder = 209;                              
@@ -382,7 +423,7 @@ cbuffer UpdatePerObject : register(b1)
 
     float3 AmbientSkyColor : Ambient
     <
-        string UIGroup = "Ambient";
+        string UIGroup = "Lighting and Ouptut";
         string UIName = "Ambient Sky Color";
         string UIWidget = "ColorPicker";
         int UIOrder = 104;
@@ -390,7 +431,7 @@ cbuffer UpdatePerObject : register(b1)
 
     float3 AmbientGroundColor : Ambient
     <
-        string UIGroup = "Ambient";
+        string UIGroup = "Lighting and Ouptut";
         string UIName = "Ambient Ground Color";
         string UIWidget = "ColorPicker";
         int UIOrder = 105;
@@ -398,7 +439,7 @@ cbuffer UpdatePerObject : register(b1)
 
     float AmbientLightIntensity
     <
-        string UIGroup = "Ambient";
+        string UIGroup = "Lighting and Ouptut";
         string UIName = "Ambient Light Intensity";
         string UIWidget = "Slider";
         float UIMin = 0.000;
@@ -410,21 +451,21 @@ cbuffer UpdatePerObject : register(b1)
     // My Parameters
     bool linearSpaceLighting
     <
-        string UIGroup = "Lighting";
+        string UIGroup = "Lighting and Ouptut";
         string UIName = "Linear Space Lighting";
         int UIOrder = 50;
     > = true;
 
     bool UseShadows
     <
-        string UIGroup = "Lighting";
+        string UIGroup = "Lighting and Ouptut";
         string UIName = "Shadows";
         int UIOrder = 51;
     > = true;
 
     float shadowMultiplier
     <
-        string UIGroup = "Lighting";
+        string UIGroup = "Lighting and Ouptut";
         string UIWidget = "Slider";
         float UIMin = 0.000;
         float UIMax = 1.000;
@@ -437,7 +478,7 @@ cbuffer UpdatePerObject : register(b1)
     // This tends to get affected by scene scale and polygon count of the objects involved.
     float shadowDepthBias : ShadowMapBias
     <
-        string UIGroup = "Lighting";
+        string UIGroup = "Lighting and Ouptut";
         string UIWidget = "Slider";
         float UIMin = 0.000;
         float UISoftMax = 10.000;
@@ -449,21 +490,21 @@ cbuffer UpdatePerObject : register(b1)
     // flips back facing normals to improve lighting for things like sheets of hair or leaves
     bool flipBackfaceNormals
     <
-        string UIGroup = "Lighting";
+        string UIGroup = "Lighting and Ouptut";
         string UIName = "Double Sided Lighting";
         int UIOrder = 54;
     > = true;
     
     bool UseToneMapping
     <
-        string UIGroup = "Lighting";
+        string UIGroup = "Lighting and Ouptut";
         string UIName = "Use Basic Tone Mapping";
         int UIOrder = 56;
     > = true;
 
     float globalTonemap
     <
-        string UIGroup = "Lighting";
+        string UIGroup = "Lighting and Ouptut";
         string UIWidget = "Slider";
         float UIMin = 0.0;
         float UISoftMax = 1.0;
@@ -474,7 +515,7 @@ cbuffer UpdatePerObject : register(b1)
 
     float exposure
     <
-        string UIGroup = "Lighting";
+        string UIGroup = "Lighting and Ouptut";
         string UIWidget = "Slider";
         float UIMin = -10.0;
         float UISoftMax = 10.0;
@@ -485,7 +526,7 @@ cbuffer UpdatePerObject : register(b1)
 
     float Opacity : OPACITY
     <
-        string UIGroup = "Opacity Group";
+        string UIGroup = "Lighting and Ouptut";
         string UIWidget = "Slider";
         float UIMin = 0.0;
         float UIMax = 1.0;
@@ -497,7 +538,7 @@ cbuffer UpdatePerObject : register(b1)
     // at what value do we clip away pixels
     float OpacityMaskBias
     <
-        string UIGroup = "Opacity Group";
+        string UIGroup = "Lighting and Ouptut";
         string UIWidget = "Slider";
         float UIMin = 0.0;
         float UIMax = 1.0;
@@ -515,7 +556,7 @@ cbuffer UpdatePerObject : register(b1)
 
     float gammaCorrectionValue
     <
-        string UIGroup = "Engine | Scene Preview";
+        string UIGroup = "Lighting and Ouptut";
         int UIOrder = 601;
     > = 2.233333333f;
 }
@@ -752,22 +793,6 @@ VsOutput vsMain(vsInput vIN)
     return OUT;
 }
 
-//------------------------------------
-// Functions
-//------------------------------------
-
-float2 pickTexcoord(int index, float2 t0, float2 t1, float2 t2)
-{
-    float2 tcoord = t0;
-
-        if (index == 1)
-            tcoord = t1;
-        else if (index == 2)
-            tcoord = t2;
-
-    return tcoord;
-}
-
 #define SHADOW_FILTER_TAPS_CNT 10
 float2 SuperFilterTaps[SHADOW_FILTER_TAPS_CNT]
 <
@@ -788,313 +813,9 @@ string UIWidget = "None";
 
 float shadowMapTexelSize
 <
-string UIWidget = "None";
+	string UIWidget = "None";
 > = { 0.00195313 }; // (1.0f / 512)
 
-// Shadows:
-// Percentage-Closer Filtering
-float lightShadow(float4x4 LightViewPrj, uniform Texture2D ShadowMapTexture, float3 VertexWorldPosition)
-{
-    float shadow = 1.0f;
-
-    float4 Pndc = mul(float4(VertexWorldPosition.xyz, 1.0), LightViewPrj);
-        Pndc.xyz /= Pndc.w;
-    if (Pndc.x > -1.0f && Pndc.x < 1.0f && Pndc.y  > -1.0f
-        && Pndc.y <  1.0f && Pndc.z >  0.0f && Pndc.z <  1.0f)
-    {
-        float2 uv = 0.5f * Pndc.xy + 0.5f;
-            uv = float2(uv.x, (1.0 - uv.y));    // maya flip Y
-        float z = Pndc.z - shadowDepthBias / Pndc.w;
-
-        // we'll sample a bunch of times to smooth our shadow a little bit around the edges:
-        shadow = 0.0f;
-        for (int i = 0; i<SHADOW_FILTER_TAPS_CNT; ++i)
-        {
-            float2 suv = uv + (SuperFilterTaps[i] * shadowMapTexelSize);
-                float val = z - ShadowMapTexture.SampleLevel(SamplerShadowDepth, suv, 0).x;
-            shadow += (val >= 0.0f) ? 0.0f : (1.0f / SHADOW_FILTER_TAPS_CNT);
-        }
-
-        // a single sample would be:
-        // shadow = 1.0f;
-        // float val = z - ShadowMapTexture.SampleLevel(SamplerShadowDepth, uv, 0 ).x;
-        // shadow = (val >= 0.0f)? 0.0f : 1.0f;
-
-        shadow = lerp(1.0f, shadow, shadowMultiplier);
-    }
-
-    return shadow;
-}
-
-
-// Clip pixel away when opacity mask is used
-//void OpacityMaskClip(float2 uv)
-//{
-//    if (UseOpacityMaskTexture)
-//    {
-//        float OpacityMaskMap = OpacityMaskTexture.Sample(SamplerAnisoWrap, uv).x;
-
-        // clip value when less then 0 for punch-through alpha.
-//        clip( OpacityMaskMap < OpacityMaskBias ? -1:1 );
-//   }
-//}
-
-float3 filmicTonemap(float3 input) //John Hable's filmic tonemap function with fixed values
-{
-    float A = 0.22;
-    float B = 0.3;
-    float C = 0.1;
-    float D = 0.2;
-    float E = 0.01;
-    float F = 0.3;
-    float linearWhite = 11.2;
-    float3 Fcolor = ((input*(A*input + C*B) + D*E) / (input*(A*input + B) + D*F)) - E / F;
-        float  Fwhite = ((linearWhite*(A*linearWhite + C*B) + D*E) / (linearWhite*(A*linearWhite + B) + D*F)) - E / F;
-    return Fcolor / Fwhite;
-}
-
-
-float sqr(float x)
-{
-    return x*x;
-}
-
-float G1V(float NdotV, float k)
-{
-    return 1.0f / (NdotV * (1.0f - k) + k);
-}
-
-float GTR1(float NdotH, float a)
-{
-    if (a >= 1.0f)
-    {
-        return 1.0f / PI;
-    }
-
-    float a2 = a*a;
-    float t = 1.0f + (a2 - 1.0f) * NdotH * NdotH;
-    return (a2 - 1.0f) / (PI*log(a2)*t);
-}
-
-float GTR2(float NdotH, float a)
-{
-    float a2 = a*a;
-    float t = 1 + (a2-1)*NdotH*NdotH;
-    return a2 / (PI * t*t);
-}
-
-float GTR2_aniso(float NdotH, float HdX, float HdY, float ax, float ay)
-{
-    return 1.0f / (PI * ax*ay * sqr(sqr(HdX / ax) + sqr(HdY / ay) + NdotH*NdotH));
-}
-
-float smithG_GGX(float Ndotv, float alphaG)
-{
-    float a = alphaG*alphaG;
-    float b = Ndotv*Ndotv;
-    return 1.0f / (Ndotv + sqrt(a + b - a*b));
-}
-
-// NEW ////
-float fresnelSchlick( float f0, float VdotH )
-{
-    return f0 + ( 1 - f0 ) * pow( 1 - VdotH, 5 );
-}
-
-float fresnelSchlick( float VdotH )
-{
-    float value  = clamp( 1 - VdotH, 0.0, 1.0 );
-    float value2 = value * value;
-    return ( value2 * value2 * value );
-}
-
-float SchlickFresnel(float u)
-{
-    float m = clamp(1 - u, 0, 1);
-    float m2 = m*m;
-    return m2*m2*m; // pow(m,5)
-}
-
-float3 FresnelOptimized( float3 R, float c )
-{
-    float3 F = lerp( R, saturate( 60 * R ), pow(1-c,4) ); 
-    return F;
-}
-
-float geomSchlickGGX( float alpha, float NdotV )
-{
-    float k    = 0.5 * alpha;
-    float geom = NdotV / ( NdotV * ( 1 - k ) + k );
-
-    return geom;
-}
-
-float ndfGGX(float alpha, float NdotH )
-{
-    float alpha2 = alpha * alpha;
-    float t      = 1 + ( alpha2 - 1 ) * NdotH * NdotH;
-    return INV_PI * alpha2 / ( t * t );
-}
-
-//float3 Gsub(float3 v) // Sub Function of G
-//{
-    //float k = ((roughness + 1) * (roughness + 1)) / 8;
-    //float fdotv = dot(fNormal, v);
-    //return vec3((fdotv) / ((fdotv) * (1.0 - k) + k));
-//}
-
-//float3 G(float3 L, float3 V, float3 H) // Geometric Attenuation Term - Schlick Modified (k = a/2)
-//{
-    //return Gsub(L) * Gsub(V);
-//}
-
-//float3 mon2lin(float3 value)
-//{
-    //return float3(pow(value[0], 2.233333333f), pow(value[1], 2.233333333f), pow(value[2], 2.233333333f));
-//}
-
-// This function is a modified version of Colin Barre-Brisebois GDC talk
-//float3 translucency(float3 thickness, float3 V, float3 L, float3 N, float lightAttenuation, float3 albedoColor)
-//{
-//    float3 LightVec = L + (N * translucentDistortion);
-//    float fLTDot = pow(saturate(dot(V, -LightVec)), translucentPower) * translucentScale;
-//    float3 translucence = lightAttenuation * (fLTDot + translucentMin) * thickness;
-//    return float3(albedoColor * translucence);
-//}
-
-// Calculate a light:
-struct lightOut
-{
-    float   Specular;
-    float3  Color;
-};
-
-/**
-lightOut ctBRDF(float3 L, float3 V, float3 L, float metalA, float F0)
-{
-    // half vector
-    vec3 h = normalize( l + v );
-
-    // dot
-    float dot_n_h = max( dot( n, h ), 0.0 );
-    float dot_n_v = max( dot( n, v ), 0.0 );
-    float dot_n_l = max( dot( n, l ), 0.0 );
-    float dot_h   = max( dot( h, v ), 0.0 );
-
-    // Geometric Term
-    //          2 * ( N dot H )( N dot L )    2 * ( N dot H )( N dot V )
-    // min( 1, ----------------------------, ---------------------------- )
-    //                 ( H dot V )                   ( H dot V )
-    float g = 2.0 * dot_n_h / dot_h;
-    float G = min( min( dot_n_v, dot_n_l ) * g, 1.0 );
-
-    // Normal Distribution Function ( cancel 1 / pi )
-    //         ( N dot H )^2 - 1
-    //  exp( ----------------------- )
-    //         ( N dot H )^2 * m^2
-    // --------------------------------
-    //         ( N dot H )^4 * m^2
-    float sq_nh   = dot_n_h * dot_n_h;
-    float sq_nh_m = sq_nh * ( m * m );
-    float D = exp( ( sq_nh - 1.0 ) / sq_nh_m ) / ( sq_nh * sq_nh_m );
-
-    // Frensnel Equation
-    // F0 + ( 1 - F0 ) * ( 1 - ( H dot V ) )^5
-    float F = F0 + ( 1.0  - F0 ) * pow( 1.0 - dot_h, 5.0 );
-
-    // CookTorrance dBRDF
-    float brdf_spec = D * F * G / ( dot_n_v * dot_n_l * 4.0 );
-
-    return brdf_spec;
-}
-*/
-
-
-//vec3 dBRDF( vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y, albedo )
-lightOut dBRDF(float3 L, float3 V, float3 N, float3 X, float3 Y, float3 Albedo, float SpecA, float roughA, float metalA)
-{
-    lightOut OUT    = (lightOut)0;
-
-    OUT.Color = float3(0, 0, 0);
-    OUT.Specular = 0.0;
-
-	float alpha = roughA * roughA;
-
-	float3 H = normalize( L + V );
-
-    float NdotL = saturate( dot( N, L ) );
-	float NdotV = saturate( dot( N, V ) );
-	float NdotH = saturate( dot( N, H ) );
-	float LdotH = saturate( dot( L, H ) );
-
-	// V ... calc visability term
-	//float k = alpha / 2.0f;
-	//float vis = G1V(NdotL, k) * G1V(NdotV, k);
-
-    if (NdotL < 0 || NdotV < 0)  //this will negate the backside
-    {
-        ////return float3(0.0f, 0.0f, 0.0f);
-        return OUT;
-    }
-
-    float3 Cdlin = Albedo.rgb; // pass in color already converted to linear
-    float Cdlum = 0.3f * Cdlin[0] + 0.6f * Cdlin[1] + 0.1f * Cdlin[2]; // luminance approx.
-
-    float3 Ctint = Cdlum > 0.0f ? Cdlin/Cdlum : 1.0f.xxx; // normalize lum. to isolate hue+sat
-    float3 Cspec0 = lerp(SpecA * 0.08f * lerp(1.0f.xxx, Ctint, specularTint), Cdlin, metalA);
-    float3 Csheen  = lerp(1.0f.xxx, Ctint, sheenTint);
-
-    // Diffuse fresnel - go from 1 at normal incidence to .5 at grazing
-    // and mix in diffuse retro-reflection based on roughness
-    float FL = SchlickFresnel(NdotL);
-    float FV = SchlickFresnel(NdotV);
-    float Fd90 = 0.5f + 2.0f * LdotH * LdotH * alpha;
-	// Fd looks odd if not * NdotL?
-    float Fd = lerp(1.0f, Fd90, FL) * lerp(1.0f, Fd90, FV);
-
-    // Based on Hanrahan-Krueger brdf approximation of isotropic bssrdf
-    // 1.25 scale is used to (roughly) preserve albedo
-    // Fss90 used to "flatten" retroreflection based on roughness
-    float Fss90 = LdotH * LdotH * alpha;
-    float Fss = lerp(0.999f, Fss90, FL) * lerp(0.999f, Fss90, FV);
-	// appears to have bright rim anomalies!!
-    float ss = 1.25f * (Fss * (1.0f / (NdotL + NdotV + 0.0001f) - 0.5f) + 0.5f);
-
-    // specular
-    float aspect = sqrt(1.0f - anisotropic * 0.9f);
-    float ax = max(0.001f, sqr(alpha) / aspect);
-    float ay = max(0.001f, sqr(alpha) * aspect);
-    float Ds = GTR2_aniso(NdotH, dot(H, X), dot(H, Y), ax, ay);
-    float FH = SchlickFresnel(LdotH);
-    float3 Fs = lerp(Cspec0, 1.0f.xxx, FH);
-    float roughg = sqr(alpha * 0.5f + 0.5f);
-    float Gs = smithG_GGX(NdotL, roughg) * smithG_GGX(NdotV, roughg);
-
-    // sheen looks weird/wrong with out view based fresnel?
-    float3 Fsheen = FH * sheen * Csheen;
-
-    float Dr = GTR1(NdotH, lerp(0.1f, 0.001f, clearcoatGloss));
-    float Fr = lerp(0.04f, 1.0f, FH);
-    float Gr = smithG_GGX(NdotL, 0.25f) * smithG_GGX(NdotV, 0.25f);
-
-    OUT.Color += ((1.0f / PI) * lerp(Fd, ss, subsurface) * Cdlin + Fsheen);
-    OUT.Color *= (1.0f - metalA) * NdotL;
-    //OUT.Color *= vis;
-
-	// next line looks weird/wrong without *NdotL?
-    OUT.Specular = (Gs * Fs * Ds);
-    OUT.Specular += (0.25f * clearcoat * Gr * Fr * Dr);
-    OUT.Specular *= NdotL;
-    //OUT.Specular *= vis;
-
-    return OUT;
-}
-
-//: End Shader
-
-//------------------------------------
-// pixel shader
-//------------------------------------
 /**
 @struct PsOutput
 @brief Output that written to the render target
@@ -1104,19 +825,30 @@ struct PsOutput  // was APPDATA
 	float4 m_Color			: SV_TARGET;
 };
 
+// Calculate a light:
+struct lightOutD
+{
+    float   Specular;
+    float3  Color;
+};
 
-    // bool checks
-    //bool useAlbedoMap = 0;
-    //bool useNormalMap = 0;
-    //bool useSpecularMap = 0;
-    //bool useRoughnessMap = 0;
-    //bool useMetalnessMap = 0;
-    //bool useAmbOccMap = 0;
+// Calculate a light:
+struct lightOutCT
+{
+    float   Specular;
+    float3  Color;
+};
 
-    //bool useSpecularRGB = 0;
-    //bool useSpecularMask = 0;
+//------------------------------------
+// external includes
+//------------------------------------
+#include "functions_structs.fxh"
+//#include "cookTorranceBRDF.fxh"
+#include "bigdBRDF.fxh"
 
-
+//------------------------------------
+// pixel shader
+//------------------------------------
 float4 pMain(VsOutput pIN, bool FrontFace : SV_IsFrontFace) : SV_Target
 {  
 	//PsOutput o;
@@ -1220,7 +952,7 @@ float4 pMain(VsOutput pIN, bool FrontFace : SV_IsFrontFace) : SV_Target
     //float3 ambientColor = ( lerp(ambGroundColor.rgb, ambSkyColor.rgb, saturate((ambientUpAxis * 0.5) + 0.5)) );
     // physical ambient
     //vec3 dBRDF( vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y, albedo, specAmount, roughnessAmount, metalnessAmount )
-    lightOut ambientDomeLight = dBRDF(N, V, N, T, Bn, albedo, specA, roughA, metalA);
+    lightOutD ambientDomeLight = dBRDF(N, V, N, T, Bn, albedo, specA, roughA, metalA);
 
     // START Light 0
     float3 L = light0Pos - pIN.m_worldPosition.xyz;
@@ -1235,7 +967,7 @@ float4 pMain(VsOutput pIN, bool FrontFace : SV_IsFrontFace) : SV_Target
 
 	float3 light0Clin = pow(light0Color.rgb, gammaCorrectionExponent);
    
-	lightOut light0 = dBRDF(L, V, N, T, Bn, albedo, specA, roughA, metalA);
+	lightOutD light0 = dBRDF(L, V, N, T, Bn, albedo, specA, roughA, metalA);
 
     // ----------------------
     // FINAL COLOR AND ALPHA:

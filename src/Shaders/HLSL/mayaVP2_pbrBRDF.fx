@@ -101,6 +101,18 @@ SamplerState LinearSampler
     AddressU  = Wrap;
     AddressV  = Wrap;
 };
+
+SamplerState BrdfSampler
+{
+    Filter = MIN_MAG_MIP_LINEAR;
+    //Filter = ANISOTROPIC;
+    AddressU  = Wrap;
+    AddressV  = Wrap;
+	AddressW  = Wrap;
+};
+
+
+
 //------------------------------------
 // Textures
 //------------------------------------
@@ -177,28 +189,6 @@ Texture2D AmbOccTexure
     int UVEditorOrder = 6;
 >;
 
-TextureCube ReflectionTextureCube : environment
-<
-    string UIGroup = "Texture Inputs";
-    string ResourceName = "";
-    string UIWidget = "FilePicker";
-    string UIName = "Reflection CubeMap";   // Note: do not rename to 'Reflection Cube Map'. This is named this way for backward compatibilty (resave after compat_maya_2013ff10.mel)
-    string ResourceType = "Cube";
-    int mipmaplevels = 0; // Use (or load) max number of mip map levels so we can use blurring
-    int UIOrder = 007;
->;
-
-TextureCube DiffuseIBLTextureCube : Environment
-<
-    string UIGroup = "Texture Inputs";
-    string ResourceName = "";
-    string UIWidget = "FilePicker";
-    string UIName = "IBL / Irradiance CubeMap";
-    string ResourceType = "Cube";   
-    int mipmaplevels = 0; // Use (or load) max number of mip map levels so we can use blurring
-    int UIOrder = 010;
->;
-
 Texture2D BrdfTexture
 <
     string UIGroup = "Texture Inputs";
@@ -206,8 +196,30 @@ Texture2D BrdfTexture
     string UIWidget = "FilePicker";
     string UIName = "BRDF Map";
     string ResourceType = "2D";
-    int mipmaplevels = 1;
+    int mipmaplevels = 0;
+    int UIOrder = 010;
+>;
+
+TextureCube DiffuseEnvTextureCube : environment
+<
+    string UIGroup = "Texture Inputs";
+    string ResourceName = "";
+    string UIWidget = "FilePicker";
+    string UIName = "Diffuse Refl [cube]";   // Note: do not rename to 'Reflection Cube Map'. This is named this way for backward compatibilty (resave after compat_maya_2013ff10.mel)
+    string ResourceType = "Cube";
+    int mipmaplevels = 0; // Use (or load) max number of mip map levels so we can use blurring
     int UIOrder = 011;
+>;
+
+TextureCube SpecularEnvTextureCube : Environment
+<
+    string UIGroup = "Texture Inputs";
+    string ResourceName = "";
+    string UIWidget = "FilePicker";
+    string UIName = "Specualar IBL / Irradiance [cube]";
+    string ResourceType = "Cube";   
+    int mipmaplevels = 0; // Use (or load) max number of mip map levels so we can use blurring
+    int UIOrder = 012;
 >;
 
 //------------------------------------
@@ -282,6 +294,15 @@ cbuffer UpdatePerObject : register(b1)
     //# variables go here...
     //# [type] [name] [min val] [max val] [default val]
     //::begin parameters
+	
+	int roughIsGloss
+	<
+		string UIGroup = "Base Properties";
+		string UIWidget = "Slider";
+		string UIFieldNames = "Roughness:Glossiness";
+		string UIName = "Rough or Gloss?";
+		int UIOrder = 0;
+	> = 0;
 
     //color baseColor .82 .67 .16
     float3 baseColor
@@ -312,6 +333,7 @@ cbuffer UpdatePerObject : register(b1)
 	<
 		string UIGroup = "Base Properties"; 
         string UIWidget = "Slider";
+		string UIName = "Roughness | Gloss";
         float UIMin = 0.001;
         float UISoftMax = 1.000;
         float UIStep = 0.001;
@@ -380,6 +402,7 @@ cbuffer UpdatePerObject : register(b1)
 		string UIGroup = "Texture Inputs";
 	> = 0;
 
+	// NEXT 2 NOT USED ... YET
     bool useSpecularRGB
 	<
 		string UIGroup = "Texture Inputs";
@@ -388,6 +411,16 @@ cbuffer UpdatePerObject : register(b1)
 	<
 		string UIGroup = "Texture Inputs";
 	> = 0;
+
+	// These are for ENV IBL
+    bool useDiffuseENv
+	<
+		string UIGroup = "Texture Inputs";
+	> = 1;
+    bool useSpecularEnv
+	<
+		string UIGroup = "Texture Inputs";
+	> = 1;
 
     //::end parameters
 
@@ -419,7 +452,7 @@ cbuffer UpdatePerObject : register(b1)
     > = 0;
 
 
-    // more of my parameters
+    // more of my parameters	
 
     float3 AmbientSkyColor : Ambient
     <
@@ -449,6 +482,32 @@ cbuffer UpdatePerObject : register(b1)
     > = {0.100f};
 
     // My Parameters
+
+    float envLightingExp
+    <
+        string UIGroup = "Lighting and Ouptut";
+        string UIWidget = "Slider";
+        float UIMin = 0.001;
+        float UISoftMax = 100.000;
+        float UIStep = 0.001;
+        string UIName = "Env Lighting Exposure";
+        int UIOrder = 40;
+    > = {5.0f};
+	
+	bool linearVertexColor
+	<
+		string UIGroup = "Material Properties | Lighting (Reflectance)";
+		string UIName = "Linear Space Vertex Color";
+		int UIOrder = 41;
+	> = false;
+	
+	bool useVertexColorAO
+	<
+		string UIGroup = "Material Properties | Lighting (Reflectance)";
+		string UIName = "Use Vertex AO";
+		int UIOrder = 42;
+	> = false;	
+
     bool linearSpaceLighting
     <
         string UIGroup = "Lighting and Ouptut";
@@ -511,18 +570,18 @@ cbuffer UpdatePerObject : register(b1)
         float UIStep = 0.01;
         string UIName = "Tone Mapping Amount";
         int UIOrder = 57;
-    > = 0.0;
+    > = 1.0;
 
     float exposure
     <
         string UIGroup = "Lighting and Ouptut";
         string UIWidget = "Slider";
-        float UIMin = -10.0;
+        float UISoftMin = -10.0;
         float UISoftMax = 10.0;
         float UIStep = 0.1;
         string UIName = "Exposure";
         int UIOrder = 58;
-    > = 0.0;
+    > = 1.0;
 
     float Opacity : OPACITY
     <
@@ -742,6 +801,15 @@ VsOutput vsMain(vsInput vIN)
     // we pass vertices in world space
     OUT.m_worldPosition = mul(float4(vIN.m_Position, 1), World);
 
+	//Interpolate and ouput vertex color
+	OUT.m_vertColor.rgb = vIN.m_VertColor.rgb;
+	OUT.m_vertColor.w = vIN.m_VertColor.w;
+
+	// setup Gamma
+	float gammaCexp = linearSpaceLighting ? gammaCorrectionValue : 1.0;
+
+	OUT.m_vertColor.rgb = linearVertexColor ? pow(vIN.m_VertColor.rgb, gammaCexp) : OUT.m_vertColor.rgb;
+
     // Pass through texture coordinates
     // flip Y for Maya
     #ifdef _MAYA_
@@ -846,6 +914,14 @@ struct lightOutCT
 //#include "cookTorranceBRDF.fxh"
 #include "bigdBRDF.fxh"
 
+float3 RGBMDecode ( float4 rgbm, float hdrExp, float gammaExp ) 
+{
+    float3 upackRGBhdr = (rgbm.bgr * rgbm.a) * hdrExp;
+    float3 rgbLin = pow(upackRGBhdr.rgb, gammaExp);
+    return rgbLin;
+}
+
+
 //------------------------------------
 // pixel shader
 //------------------------------------
@@ -854,18 +930,17 @@ float4 pMain(VsOutput pIN, bool FrontFace : SV_IsFrontFace) : SV_Target
 	//PsOutput o;
 	      
     // setup Gamma
-    float gammaCorrectionExponent = linearSpaceLighting ? gammaCorrectionValue : 1.0;
+    float gammaCorrectExp = linearSpaceLighting ? gammaCorrectionValue : 1.0;
 
     // Opacity:
     float opacity = saturate(Opacity);
 
     // Set up view
     //float3 V = pIN.m_view.xyz;  <-- This gives a BAD view vector!!!
-    float3  V = viewInv[3].xyz - pIN.m_worldPosition.xyz;
-    V = normalize(V);
+    float3  V = normalize(viewInv[3].xyz - pIN.m_worldPosition.xyz);
 
     //Base Normals
-    float3 N = normalize(pIN.m_worldNormal.xyz);
+    float3 N = pIN.m_worldNormal.xyz;
 
     // set up additional normals, tangent, binormals
     float3 Nw = N;
@@ -902,8 +977,8 @@ float4 pMain(VsOutput pIN, bool FrontFace : SV_IsFrontFace) : SV_Target
     }
 
     // ambient dome
-    float3 ambGroundColor = pow(AmbientGroundColor.rgb, gammaCorrectionExponent);
-    float3 ambSkyColor = pow(AmbientSkyColor.rgb, gammaCorrectionExponent);
+    float3 ambGroundColor = pow(AmbientGroundColor.rgb, gammaCorrectExp);
+    float3 ambSkyColor = pow(AmbientSkyColor.rgb, gammaCorrectExp);
     #ifndef _ZUP_
         float ambientUpAxis = N.y;
     #else
@@ -912,11 +987,11 @@ float4 pMain(VsOutput pIN, bool FrontFace : SV_IsFrontFace) : SV_Target
     float3 ambDomeColor = ( lerp(ambGroundColor.rgb, ambSkyColor.rgb, saturate((ambientUpAxis * 0.5) + 0.5)) );
 
     // make sRGB colors linear
-    float3 albedo = pow(baseColor.rgb, gammaCorrectionExponent);
+    float3 albedo = pow(baseColor.rgb, gammaCorrectExp);
     if (useAlbedoMap)
     {
         float3 cBaseMap = AlbedoTexture.Sample(SamplerAnisoWrap, pIN.m_uv0).rgb;
-        albedo = pow(cBaseMap.rgb, gammaCorrectionExponent);
+        albedo = pow(cBaseMap.rgb, gammaCorrectExp);
     }
 
     // specular RGB and Mask (alpha)
@@ -926,14 +1001,16 @@ float4 pMain(VsOutput pIN, bool FrontFace : SV_IsFrontFace) : SV_Target
         float4 specMap = SpecularTexure.Sample(SamplerAnisoWrap, pIN.m_uv0).rgba;
         specA = specMap.x;
 
-        if (useSpecularRGB) float3 sColor = pow(specMap.rgb, gammaCorrectionExponent).rgb;
+        if (useSpecularRGB) float3 sColor = pow(specMap.rgb, gammaCorrectExp).rgb;
         if (useSpecularMask) specA = specMap.a;
     }
 
     float roughA = roughness;
     if (useRoughnessMap)
     {
-        roughA = 1.0f - RoughnessTexure.Sample(SamplerAnisoWrap, pIN.m_uv0).g;
+		
+		roughA = RoughnessTexure.Sample(SamplerAnisoWrap, pIN.m_uv0).g;
+		roughA = roughIsGloss ? roughA : 1.0f - roughA;
     }
 
     float metalA = metalness;
@@ -947,6 +1024,11 @@ float4 pMain(VsOutput pIN, bool FrontFace : SV_IsFrontFace) : SV_Target
     {
         ambOcc = AmbOccTexure.Sample(SamplerAnisoWrap, pIN.m_uv0).rgb;
     }
+
+	if (useVertexColorAO)
+	{
+		ambOcc *= pIN.m_vertColor.rgb;
+	}
     
     // cheap ambient
     //float3 ambientColor = ( lerp(ambGroundColor.rgb, ambSkyColor.rgb, saturate((ambientUpAxis * 0.5) + 0.5)) );
@@ -965,29 +1047,88 @@ float4 pMain(VsOutput pIN, bool FrontFace : SV_IsFrontFace) : SV_Target
     float attenuation = 1.0f;  // directional lights have no attenuation
     attenuation = lerp(1.0, 1 / pow(D, light0AttenScale), enableAttenuation);
 
-	float3 light0Clin = pow(light0Color.rgb, gammaCorrectionExponent);
-   
+	// Light 0
+	float3 light0Clin = pow(light0Color.rgb, gammaCorrectExp);
 	lightOutD light0 = dBRDF(L, V, N, T, Bn, albedo, specA, roughA, metalA);
+	float3 light0Total = (light0.Color + ( light0.Specular * specA) ) * light0Clin * light0Intensity * attenuation;
 
+	// Smbient Dome
+	// physically based ambient has no specular and no attenuation
+    float3 ambTotal = ambientDomeLight.Color * ambDomeColor * AmbientLightIntensity;
+	
+    // Env
+	// env maps set up
+	const float rMipCount = 8.0f;
+	float roughMip = roughA * rMipCount;
+	//float roughMip = roughA + rMipCount;
+
+	float3 diffEnv = (0.0f, 0.0f, 0.0f);
+	float3 diffEnvLin = (0.0f, 0.0f, 0.0f);
+	if (useDiffuseENv)
+	{
+		//float4 diffEnvMap = DiffuseEnvTextureCube.SampleLevel(CubeMapSampler, reflection, 0.0f).rgba;
+		float4 diffEnvMap = DiffuseEnvTextureCube.SampleLevel(CubeMapSampler, N, 0.0f).rgba;
+		diffEnvLin = RGBMDecode(diffEnvMap, envLightingExp, gammaCorrectExp).rgb;  // decode to HDR
+		//diffEnvLin = pow(diffEnvMap.rgb, gammaCorrectExp) / PI;  // make values linear
+		diffEnv = albedo * (1.0 - metalA) * (diffEnvLin);
+	}
+
+    float3 specEnvLin = (0.0f, 0.0f, 0.0f);
+	float3 specEnv = (0.0f, 0.0f, 0.0f);
+    float3 Cspec = (0.0f, 0.0f, 0.0f);
+
+    // Normal dependent terms.
+    float  NdotV = - saturate(dot( V, N ));
+    float3 reflection = reflect( V, N );
+
+	if (useSpecularEnv)
+	{
+
+		//float3 Cdlin = albedo.rgb; // pass in color already converted to linear
+		//float Cdlum = 0.3f * Cdlin[0] + 0.6f * Cdlin[1] + 0.1f * Cdlin[2]; // luminance approx.
+		//float3 Ctint = Cdlum > 0.0f ? Cdlin/Cdlum : 1.0f.xxx; // normalize lum. to isolate hue+sat
+		//float3 Cspec0 = lerp(SpecA * 0.08f * lerp(1.0f.xxx, Ctint, specularTint), Cdlin, metalA);
+
+		const float3 dielectricColor  = float3(0.04f, 0.04f, 0.04f);
+
+		float3 brdfMap = BrdfTexture.Sample(BrdfSampler, float2(NdotV, roughA), 0.0f).xyz;
+
+		float4 specEnvMap = SpecularEnvTextureCube.SampleLevel(CubeMapSampler, -reflection, roughMip).rgba;
+		specEnvLin = RGBMDecode(specEnvMap, envLightingExp, gammaCorrectExp);  // decode to HDR
+		//specEnvLin = pow(specEnvMap.rgb, gammaCorrectExp);  // make values linear
+	
+		// Hack version to decrease fresnel the more metal a meterial is.
+		//specEnv = lerp(dielectricColor, albedo, metalA) * brdfMap.x + (brdfMap.y*(clamp(1.0-metalA, 0.04f, 1.0f)));
+		Cspec = lerp(dielectricColor, albedo, metalA) * brdfMap.x + brdfMap.y;
+		specEnv = (specEnvLin.rgb) * Cspec.rgb * specA;
+	}
+	
     // ----------------------
     // FINAL COLOR AND ALPHA:
     // ----------------------
-
-	// physically based ambient has no specular and no attenuation
-    float3 ambTotal = ambientDomeLight.Color * ambDomeColor * AmbientLightIntensity * ambOcc;
-	
-    float3 light0Total = (light0.Color + ( light0.Specular * specA) ) * light0Clin * light0Intensity * attenuation;
-
     //float3 result = ambientColor * AmbientLightIntensity * opacity;
 
     // final alpha:
     float transperancy = opacity;
 
-    float3 result = light0Total + ambTotal;
+    float3 result = light0Total + ( (ambTotal + diffEnv + specEnv) * ambOcc);
+
+	
+	//result = diffEnvLin;
+	//result = diffEnv;
+	//result = specEnvLin;
+    //result = Cspec;
+    
+    //float4 foo = SpecularEnvTextureCube.SampleLevel(CubeMapSampler, -reflection, roughMip).rgba;
+    //float4 foo = SpecularEnvTextureCube.SampleLevel(CubeMapSampler, reflection, 0.0f).bgra;
+    //float3 fool = foo.rgb * foo.aaa;
+    //result = fool;
+
+	//result = specEnv;
 
     // do gamma correction in shader:
     if (!MayaFullScreenGamma)
-        result = pow(result, 1 / gammaCorrectionExponent);
+        result = pow(result, 1 / gammaCorrectExp);
 
     // User adjusted tone mapping
     if (UseToneMapping)

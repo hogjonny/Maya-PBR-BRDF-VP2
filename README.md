@@ -3,7 +3,9 @@ A WIP Implementation of a Physically Plausible (PBR/PBS) HLSL Shader for the May
 
 What's new?
 - vertex baked AO
-- Exposure for IBL diffuse / specular (uses pre-convolved .dds lighting cubes.  To Do: implement HDR source images for cubes. The intent is that this shader use all source art - your pipeline will, combine masks, swizzle channels, compress and crunch data into an optimized version if you are using this to create game art.)
+- Exposure for IBL diffuse / specular (uses pre-convolved .dds lighting cubes.  (To Do: implement HDR source images for cubes. The intent is that this shader use all source art - your pipeline will, combine masks, swizzle channels, compress and crunch data into an optimized version if you are using this to create game art.)
+- in test I used IBL's generated with: https://github.com/derkreature/IBLBaker
+- and the shader ball is from: https://github.com/derkreature/ShaderBall
 
 ![alt tag](https://github.com/HogJonnyMaxPlay/Maya-PBR-BRDF-VP2/blob/master/images/moreBetterFeatures.png)
 

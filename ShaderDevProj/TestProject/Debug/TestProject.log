@@ -1,0 +1,31 @@
+﻿Build started 8/12/2015 10:32:38 AM.
+     1>Project "C:\Users\jonny.galloway\Documents\GitHub\Maya-PBR-BRDF-VP2\ShaderDevProj\TestProject\TestProject.vcxproj" on node 2 (Build target(s)).
+     1>FxCompile:
+         C:\Program Files (x86)\Windows Kits\8.1\bin\x86\fxc.exe /nologo /E"pMain" /T fx_5_0 /Fo "C:\Users\jonny.galloway\Documents\GitHub\Maya-PBR-BRDF-VP2\ShaderDevProj\Debug\mayaVP2_pbrBRDF.cso" /Od /Zi ..\..\src\Shaders\HLSL\mayaVP2_pbrBRDF.fx 
+     1>FXC : warning X4717: Effects deprecated for D3DCompiler_47
+     1>C:\Users\jonny.galloway\Documents\GitHub\Maya-PBR-BRDF-VP2\src\Shaders\HLSL\mayaVP2_pbrBRDF.fx(802,5-63): warning X3206: implicit truncation of vector type
+     1>C:\Users\jonny.galloway\Documents\GitHub\Maya-PBR-BRDF-VP2\src\Shaders\HLSL\bigdBRDF.fxh(74,5-33): warning X3206: implicit truncation of vector type
+     1>C:\Users\jonny.galloway\Documents\GitHub\Maya-PBR-BRDF-VP2\src\Shaders\HLSL\mayaVP2_pbrBRDF.fx(1065,20-29): warning X3081: comma expression used where a vector constructor may have been intended
+     1>C:\Users\jonny.galloway\Documents\GitHub\Maya-PBR-BRDF-VP2\src\Shaders\HLSL\mayaVP2_pbrBRDF.fx(1065,20-35): warning X3081: comma expression used where a vector constructor may have been intended
+     1>C:\Users\jonny.galloway\Documents\GitHub\Maya-PBR-BRDF-VP2\src\Shaders\HLSL\mayaVP2_pbrBRDF.fx(1066,23-32): warning X3081: comma expression used where a vector constructor may have been intended
+     1>C:\Users\jonny.galloway\Documents\GitHub\Maya-PBR-BRDF-VP2\src\Shaders\HLSL\mayaVP2_pbrBRDF.fx(1066,23-38): warning X3081: comma expression used where a vector constructor may have been intended
+     1>C:\Users\jonny.galloway\Documents\GitHub\Maya-PBR-BRDF-VP2\src\Shaders\HLSL\mayaVP2_pbrBRDF.fx(1076,26-35): warning X3081: comma expression used where a vector constructor may have been intended
+     1>C:\Users\jonny.galloway\Documents\GitHub\Maya-PBR-BRDF-VP2\src\Shaders\HLSL\mayaVP2_pbrBRDF.fx(1076,26-41): warning X3081: comma expression used where a vector constructor may have been intended
+     1>C:\Users\jonny.galloway\Documents\GitHub\Maya-PBR-BRDF-VP2\src\Shaders\HLSL\mayaVP2_pbrBRDF.fx(1077,20-29): warning X3081: comma expression used where a vector constructor may have been intended
+     1>C:\Users\jonny.galloway\Documents\GitHub\Maya-PBR-BRDF-VP2\src\Shaders\HLSL\mayaVP2_pbrBRDF.fx(1077,20-35): warning X3081: comma expression used where a vector constructor may have been intended
+     1>C:\Users\jonny.galloway\Documents\GitHub\Maya-PBR-BRDF-VP2\src\Shaders\HLSL\mayaVP2_pbrBRDF.fx(1078,21-30): warning X3081: comma expression used where a vector constructor may have been intended
+     1>C:\Users\jonny.galloway\Documents\GitHub\Maya-PBR-BRDF-VP2\src\Shaders\HLSL\mayaVP2_pbrBRDF.fx(1078,21-36): warning X3081: comma expression used where a vector constructor may have been intended
+     1>C:\Users\jonny.galloway\Documents\GitHub\Maya-PBR-BRDF-VP2\src\Shaders\HLSL\functions_structs.fxh(98,5): warning X4000: use of potentially uninitialized variable (GTR1)
+         
+         compilation object save succeeded; see C:\Users\jonny.galloway\Documents\GitHub\Maya-PBR-BRDF-VP2\ShaderDevProj\Debug\mayaVP2_pbrBRDF.cso
+       ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt main.cpp
+         main.cpp
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\jonny.galloway\Documents\GitHub\Maya-PBR-BRDF-VP2\ShaderDevProj\Debug\ShaderDevProject.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\Users\jonny.galloway\Documents\GitHub\Maya-PBR-BRDF-VP2\ShaderDevProj\Debug\ShaderDevProject.pdb" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\jonny.galloway\Documents\GitHub\Maya-PBR-BRDF-VP2\ShaderDevProj\Debug\ShaderDevProject.lib" /MACHINE:X86 Debug\main.obj
+         TestProject.vcxproj -> C:\Users\jonny.galloway\Documents\GitHub\Maya-PBR-BRDF-VP2\ShaderDevProj\Debug\ShaderDevProject.exe
+     1>Done Building Project "C:\Users\jonny.galloway\Documents\GitHub\Maya-PBR-BRDF-VP2\ShaderDevProj\TestProject\TestProject.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:01.76

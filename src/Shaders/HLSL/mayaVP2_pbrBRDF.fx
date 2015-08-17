@@ -1,9 +1,5 @@
 // shadertype=hlsl
 
-#define PI 3.14159265358979323846f
-
-static const float INV_PI = ( 1.0 / PI );
-
 #define NumberOfMipMaps 0
 
 #define _3DSMAX_SPIN_MAX 99999
@@ -18,100 +14,9 @@ static const float INV_PI = ( 1.0 / PI );
 #endif
 
 //------------------------------------
-// State
-//------------------------------------
-#ifdef _MAYA_
-    RasterizerState WireframeCullFront
-    {
-        CullMode = Front;
-        FillMode = WIREFRAME;
-    };
-
-    BlendState PMAlphaBlending
-    {
-        AlphaToCoverageEnable = FALSE;
-        BlendEnable[0] = TRUE;
-        SrcBlend = ONE;
-        DestBlend = INV_SRC_ALPHA;
-        BlendOp = ADD;
-        SrcBlendAlpha = ONE;    // Required for hardware frame render alpha channel
-        DestBlendAlpha = INV_SRC_ALPHA;
-        BlendOpAlpha = ADD;
-        RenderTargetWriteMask[0] = 0x0F;
-    };
-#endif
-
-//------------------------------------
 // Samplers
 //------------------------------------
-SamplerState CubeMapSampler
-{
-    Filter = ANISOTROPIC;
-    AddressU = Clamp;
-    AddressV = Clamp;
-    AddressW = Clamp;    
-};
-
-SamplerState SamplerAnisoWrap
-{
-    Filter = ANISOTROPIC;
-    AddressU = Wrap;
-    AddressV = Wrap;
-};
-
-SamplerState SamplerAnisoClamp
-{
-    Filter = ANISOTROPIC;
-    AddressU = Clamp;
-    AddressV = Clamp;
-};
-
-SamplerState SamplerShadowDepth
-{
-    Filter = MIN_MAG_MIP_POINT;
-    AddressU = Border;
-    AddressV = Border;
-    BorderColor = float4(1.0f, 1.0f, 1.0f, 1.0f);
-};
-
-SamplerState SamplerGradientWrap
-{
-    Filter = MIN_MAG_MIP_LINEAR;
-    AddressU = Wrap;
-    AddressV = Wrap;
-};
-
-SamplerState SamplerRamp
-{
-    Filter = MIN_MAG_MIP_LINEAR;
-    AddressU = Clamp;
-    AddressV = Clamp;
-};
-
-SamplerState PointSampler
-{
-    Filter = MIN_MAG_MIP_POINT;
-    AddressU  = Wrap;
-    AddressV  = Wrap;
-};
-
-SamplerState LinearSampler
-{
-    Filter = MIN_MAG_MIP_LINEAR;
-    AddressU  = Wrap;
-    AddressV  = Wrap;
-};
-
-SamplerState BrdfSampler
-{
-    Filter = MIN_MAG_MIP_LINEAR;
-    //Filter = ANISOTROPIC;
-    AddressU  = Wrap;
-    AddressV  = Wrap;
-	AddressW  = Wrap;
-};
-
-
+#include "samplers.fxh"
 
 //------------------------------------
 // Textures
@@ -119,10 +24,10 @@ SamplerState BrdfSampler
 
 Texture2D AlbedoTexture
 <
-    string UIGroup = "Texture Inputs";
+    string UIGroup = "Primary Texture Inputs";
     string ResourceName = "";
     string UIWidget = "FilePicker";
-    string UIName = "Albedo Map";
+    string UIName = "Albedo Map [RGBa]";
     string ResourceType = "2D"; 
     int mipmaplevels = NumberOfMipMaps;
     int UIOrder = 001;
@@ -131,10 +36,10 @@ Texture2D AlbedoTexture
 
 Texture2D NormalTexture
 <
-    string UIGroup = "Texture Inputs";
+    string UIGroup = "Primary Texture Inputs";
     string ResourceName = "";
     string UIWidget = "FilePicker";
-    string UIName = "Normal Map";
+    string UIName = "Normal Map [RGB]";
     string ResourceType = "2D";
     int mipmaplevels = 0;   // If mip maps exist in texture, Maya will load them. So user can pre-calculate and re-normalize mip maps for normal maps in .dds
     int UIOrder = 002;
@@ -143,10 +48,10 @@ Texture2D NormalTexture
 
 Texture2D SpecularTexure
 <
-    string UIGroup = "Texture Inputs";
+    string UIGroup = "Primary Texture Inputs";
     string ResourceName = "";
     string UIWidget = "FilePicker";
-    string UIName = "Specular Texture";
+    string UIName = "Specular Texture [Mask]";
     string ResourceType = "2D"; 
     int mipmaplevels = NumberOfMipMaps;
     int UIOrder = 003;
@@ -155,10 +60,10 @@ Texture2D SpecularTexure
 
 Texture2D RoughnessTexure
 <
-    string UIGroup = "Texture Inputs";
+    string UIGroup = "Primary Texture Inputs";
     string ResourceName = "";
     string UIWidget = "FilePicker";
-    string UIName = "Roughness Texture";
+    string UIName = "Roughness Texture [Mask]";
     string ResourceType = "2D"; 
     int mipmaplevels = NumberOfMipMaps;
     int UIOrder = 004;
@@ -167,10 +72,10 @@ Texture2D RoughnessTexure
 
 Texture2D MetalnessTexure
 <
-    string UIGroup = "Texture Inputs";
+    string UIGroup = "Primary Texture Inputs";
     string ResourceName = "";
     string UIWidget = "FilePicker";
-    string UIName = "Metal Texture";
+    string UIName = "Metal Texture [Mask]";
     string ResourceType = "2D"; 
     int mipmaplevels = NumberOfMipMaps;
     int UIOrder = 005;
@@ -179,10 +84,10 @@ Texture2D MetalnessTexure
 
 Texture2D AmbOccTexure
 <
-    string UIGroup = "Texture Inputs";
+    string UIGroup = "Primary Texture Inputs";
     string ResourceName = "";
     string UIWidget = "FilePicker";
-    string UIName = "Ambient Occlusion Texture";
+    string UIName = "AO Texture [Mask]";
     string ResourceType = "2D"; 
     int mipmaplevels = NumberOfMipMaps;
     int UIOrder = 006;
@@ -191,10 +96,10 @@ Texture2D AmbOccTexure
 
 Texture2D BrdfTexture
 <
-    string UIGroup = "Texture Inputs";
+    string UIGroup = "Primary Texture Inputs";
     string ResourceName = "";
     string UIWidget = "FilePicker";
-    string UIName = "BRDF Map";
+    string UIName = "BRDF Map [2D]";
     string ResourceType = "2D";
     int mipmaplevels = 0;
     int UIOrder = 010;
@@ -202,10 +107,10 @@ Texture2D BrdfTexture
 
 TextureCube DiffuseEnvTextureCube : environment
 <
-    string UIGroup = "Texture Inputs";
+    string UIGroup = "Primary Texture Inputs";
     string ResourceName = "";
     string UIWidget = "FilePicker";
-    string UIName = "Diffuse Refl [cube]";   // Note: do not rename to 'Reflection Cube Map'. This is named this way for backward compatibilty (resave after compat_maya_2013ff10.mel)
+    string UIName = "Diffuse IBL [cube]";   // Note: do not rename to 'Reflection Cube Map'. This is named this way for backward compatibilty (resave after compat_maya_2013ff10.mel)
     string ResourceType = "Cube";
     int mipmaplevels = 0; // Use (or load) max number of mip map levels so we can use blurring
     int UIOrder = 011;
@@ -213,55 +118,14 @@ TextureCube DiffuseEnvTextureCube : environment
 
 TextureCube SpecularEnvTextureCube : Environment
 <
-    string UIGroup = "Texture Inputs";
+    string UIGroup = "Primary Texture Inputs";
     string ResourceName = "";
     string UIWidget = "FilePicker";
-    string UIName = "Specualar IBL / Irradiance [cube]";
+    string UIName = "Specualar IBL [cube]";
     string ResourceType = "Cube";   
     int mipmaplevels = 0; // Use (or load) max number of mip map levels so we can use blurring
     int UIOrder = 012;
 >;
-
-//------------------------------------
-// Shadow Maps
-//------------------------------------
-Texture2D light0ShadowMap : SHADOWMAP
-<
-    string Object = "Light 0";  // UI Group for lights, auto-closed
-    string UIWidget = "None";
-    int UIOrder = 5010;
->;
-
-Texture2D light1ShadowMap : SHADOWMAP
-<
-    string Object = "Light 1";
-    string UIWidget = "None";
-    int UIOrder = 5020;
->;
-
-Texture2D light2ShadowMap : SHADOWMAP
-<
-    string Object = "Light 2";
-    string UIWidget = "None";
-    int UIOrder = 5030;
->;
-
-//------------------------------------
-// Internal depth textures for Maya depth-peeling transparency
-//------------------------------------
-#ifdef _MAYA_
-
-    Texture2D transpDepthTexture : transpdepthtexture
-    <
-        string UIWidget = "None";
-    >;
-
-    Texture2D opaqueDepthTexture : opaquedepthtexture
-    <
-        string UIWidget = "None";
-    >;
-
-#endif
 
 //------------------------------------
 // Per Frame parameters
@@ -379,87 +243,65 @@ cbuffer UpdatePerObject : register(b1)
     // new params for maps etc
     bool useAlbedoMap
 	<
-		string UIGroup = "Texture Inputs";
+		string UIGroup = "Primary Texture Inputs";
 	> = 1;
     bool useNormalMap
 	<
-		string UIGroup = "Texture Inputs";
+		string UIGroup = "Primary Texture Inputs";
 	> = 1;
     bool useSpecularMap
 	<
-		string UIGroup = "Texture Inputs";
+		string UIGroup = "Primary Texture Inputs";
 	> = 1;
     bool useRoughnessMap
 	<
-		string UIGroup = "Texture Inputs";
+		string UIGroup = "Primary Texture Inputs";
 	> = 1;
     bool useMetalnessMap
 	<
-		string UIGroup = "Texture Inputs";
+		string UIGroup = "Primary Texture Inputs";
 	> = 1;
     bool useAmbOccMap
 	<
-		string UIGroup = "Texture Inputs";
+		string UIGroup = "Primary Texture Inputs";
 	> = 0;
 
 	// NEXT 2 NOT USED ... YET
     bool useSpecularRGB
 	<
-		string UIGroup = "Texture Inputs";
+		string UIGroup = "Primary Texture Inputs";
 	> = 0;
     bool useSpecularMask
 	<
-		string UIGroup = "Texture Inputs";
+		string UIGroup = "Primary Texture Inputs";
 	> = 0;
 
 	// These are for ENV IBL
     bool useDiffuseENv
 	<
-		string UIGroup = "Texture Inputs";
+		string UIGroup = "Primary Texture Inputs";
 	> = 1;
+
     bool useSpecularEnv
 	<
-		string UIGroup = "Texture Inputs";
+		string UIGroup = "Primary Texture Inputs";
 	> = 1;
 
-    //::end parameters
-
-    // ---------------------------------------------
-    // string UIGroup = "Normal | Specular"; UI 200+
-    // ---------------------------------------------
-    int NormalCoordsysX
-    <                                              
-        string UIGroup = "Normal Group";           
-        string UIFieldNames = "Positive:Negative";      
-        string UIName = "Normal X (Red) [*]";       
-        int UIOrder = 207;                              
-    > = 0;
-
-    int NormalCoordsysY      
-    <                                                   
-        string UIGroup = "Normal Group";           
-        string UIFieldNames = "Positive:Negative";      
-        string UIName = "Normal Y (Green) [*]"; 
-        int UIOrder = 208;                              
-    > = 0;
-
-    int NormalCoordsysZ      
-    <                                                   
-        string UIGroup = "Normal Group";           
-        string UIFieldNames = "Positive:Negative";      
-        string UIName = "Normal Z (Blue) [*]";  
-        int UIOrder = 209;                              
-    > = 0;
-
-
     // more of my parameters	
+
+    bool linearSpaceLighting
+	<
+		string UIGroup = "Lighting and Ouptut";
+		string UIName = "Linear Space Lighting";
+		int UIOrder = 100;
+	> = true;
 
     float3 AmbientSkyColor : Ambient
     <
         string UIGroup = "Lighting and Ouptut";
         string UIName = "Ambient Sky Color";
         string UIWidget = "ColorPicker";
-        int UIOrder = 104;
+        int UIOrder = 103;
     > = {0.0f, 1.0f, 1.0f };
 
     float3 AmbientGroundColor : Ambient
@@ -467,7 +309,7 @@ cbuffer UpdatePerObject : register(b1)
         string UIGroup = "Lighting and Ouptut";
         string UIName = "Ambient Ground Color";
         string UIWidget = "ColorPicker";
-        int UIOrder = 105;
+        int UIOrder = 104;
     > = {0.087f, 0.064f, 0.032f };
 
     float AmbientLightIntensity
@@ -478,10 +320,8 @@ cbuffer UpdatePerObject : register(b1)
         float UIMin = 0.000;
         float UIMax = 100.000;
         float UIStep = 0.001;
-        int UIOrder = 106;
+        int UIOrder = 105;
     > = {0.100f};
-
-    // My Parameters
 
     float envLightingExp
     <
@@ -490,36 +330,50 @@ cbuffer UpdatePerObject : register(b1)
         float UIMin = 0.001;
         float UISoftMax = 100.000;
         float UIStep = 0.001;
-        string UIName = "Env Lighting Exposure";
-        int UIOrder = 40;
+        string UIName = "Env IBL Exposure";
+        int UIOrder = 106;
     > = {5.0f};
-	
-	bool linearVertexColor
-	<
-		string UIGroup = "Material Properties | Lighting (Reflectance)";
-		string UIName = "Linear Space Vertex Color";
-		int UIOrder = 41;
-	> = false;
-	
-	bool useVertexColorAO
-	<
-		string UIGroup = "Material Properties | Lighting (Reflectance)";
-		string UIName = "Use Vertex AO";
-		int UIOrder = 42;
-	> = false;	
 
-    bool linearSpaceLighting
-    <
-        string UIGroup = "Lighting and Ouptut";
-        string UIName = "Linear Space Lighting";
-        int UIOrder = 50;
-    > = true;
+	bool UseToneMapping
+	<
+		string UIGroup = "Lighting and Ouptut";
+		string UIName = "Use Basic Tone Mapping";
+		int UIOrder = 107;
+	> = true;
+
+	float globalTonemap
+	<
+		string UIGroup = "Lighting and Ouptut";
+		string UIWidget = "Slider";
+		float UIMin = 0.0;
+		float UISoftMax = 1.0;
+		float UIStep = 0.01;
+		string UIName = "Tone Mapping Amount";
+		int UIOrder = 108;
+	> = 1.0;
+
+	float exposure
+	<
+		string UIGroup = "Lighting and Ouptut";
+		string UIWidget = "Slider";
+		float UISoftMin = -10.0;
+		float UISoftMax = 10.0;
+		float UIStep = 0.1;
+		string UIName = "Exposure";
+		int UIOrder = 109;
+	> = 1.0;
+
+	float gammaCorrectionValue
+	<
+		string UIGroup = "Lighting and Ouptut";
+		int UIOrder = 110;
+	> = 2.233333333f;
 
     bool UseShadows
     <
         string UIGroup = "Lighting and Ouptut";
         string UIName = "Shadows";
-        int UIOrder = 51;
+        int UIOrder = 111;
     > = true;
 
     float shadowMultiplier
@@ -530,7 +384,7 @@ cbuffer UpdatePerObject : register(b1)
         float UIMax = 1.000;
         float UIStep = 0.001;
         string UIName = "Shadow Strength";
-        int UIOrder = 52;
+        int UIOrder = 112;
     > = {1.0f};
 
     // This offset allows you to fix any in-correct self shadowing caused by limited precision.
@@ -543,7 +397,7 @@ cbuffer UpdatePerObject : register(b1)
         float UISoftMax = 10.000;
         float UIStep = 0.001;
         string UIName = "Shadow Bias";
-        int UIOrder = 53;
+        int UIOrder = 113;
     > = {0.01f};
 
     // flips back facing normals to improve lighting for things like sheets of hair or leaves
@@ -551,41 +405,34 @@ cbuffer UpdatePerObject : register(b1)
     <
         string UIGroup = "Lighting and Ouptut";
         string UIName = "Double Sided Lighting";
-        int UIOrder = 54;
-    > = true;
-    
-    bool UseToneMapping
-    <
-        string UIGroup = "Lighting and Ouptut";
-        string UIName = "Use Basic Tone Mapping";
-        int UIOrder = 56;
+        int UIOrder = 114;
     > = true;
 
-    float globalTonemap
-    <
-        string UIGroup = "Lighting and Ouptut";
-        string UIWidget = "Slider";
-        float UIMin = 0.0;
-        float UISoftMax = 1.0;
-        float UIStep = 0.01;
-        string UIName = "Tone Mapping Amount";
-        int UIOrder = 57;
-    > = 1.0;
+	// ---------------------------------------------
+	// Color Per-Vertex Settings
+	// ---------------------------------------------
 
-    float exposure
-    <
-        string UIGroup = "Lighting and Ouptut";
-        string UIWidget = "Slider";
-        float UISoftMin = -10.0;
-        float UISoftMax = 10.0;
-        float UIStep = 0.1;
-        string UIName = "Exposure";
-        int UIOrder = 58;
-    > = 1.0;
+	bool linearVertexColor
+	<
+		string UIGroup = "Color Per-Vertex Settings";
+		string UIName = "Linear Space sRGB Vertex Colors";
+		int UIOrder = 200;
+	> = false;
 
+	bool useVertexColorAO
+	<
+		string UIGroup = "Color Per-Vertex Settings";
+		string UIName = "Use Vertex AO";
+		int UIOrder = 201;
+	> = false;
+
+
+	// ---------------------------------------------
+	// Opacity GROUP
+	// ---------------------------------------------
     float Opacity : OPACITY
     <
-        string UIGroup = "Lighting and Ouptut";
+        string UIGroup = "Opacity Settings";
         string UIWidget = "Slider";
         float UIMin = 0.0;
         float UIMax = 1.0;
@@ -594,136 +441,100 @@ cbuffer UpdatePerObject : register(b1)
         int UIOrder = 300;
     > = 1.0;
 
+	//hasVertexAlpha || hasAlpha || useCutoutAlpha
+	bool hasAlpha
+	<
+		string UIGroup = "Opacity Settings";
+		string UIName = "Albedo Map has Alpha RGB[A]";
+		int UIOrder = 301;
+	> = 1;
+
+	bool hasVertexAlpha
+	<
+		string UIGroup = "Opacity Settings";
+		string UIName = "Use Vertex Alpha (colorset0)";
+		int UIOrder = 302;
+	> = 1;
+
+	bool useCutoutAlpha
+	<
+		string UIGroup = "Opacity Settings";
+		int UIOrder = 303;
+	> = 1;
+
     // at what value do we clip away pixels
     float OpacityMaskBias
     <
-        string UIGroup = "Lighting and Ouptut";
+        string UIGroup = "Opacity Settings";
         string UIWidget = "Slider";
         float UIMin = 0.0;
         float UIMax = 1.0;
         float UIStep = 0.001;
         string UIName = "Opacity Mask Bias";
-        int UIOrder = 302;
+        int UIOrder = 304;
     > = 0.5;
 
-    bool SupportNonUniformScale
-    <
-        string UIGroup = "Normal Group";
-        string UIName = "Support Non-Uniform Scale";
-        int UIOrder = 201;
-    > = true;                                           
+	// ---------------------------------------------
+	// string UIGroup = "Normal Group"
+	// ---------------------------------------------
+	int NormalCoordsysX
+	<
+		string UIGroup = "Normal Group";
+		string UIFieldNames = "Positive:Negative";
+		string UIName = "Normal X (Red) [*]";
+	> = 0;
 
-    float gammaCorrectionValue
-    <
-        string UIGroup = "Lighting and Ouptut";
-        int UIOrder = 601;
-    > = 2.233333333f;
-}
+	int NormalCoordsysY
+	<
+		string UIGroup = "Normal Group";
+		string UIFieldNames = "Positive:Negative";
+		string UIName = "Normal Y (Green) [*]";
+	> = 0;
+
+	int NormalCoordsysZ
+	<
+		string UIGroup = "Normal Group";
+		string UIFieldNames = "Positive:Negative";
+		string UIName = "Normal Z (Blue) [*]";
+	> = 0;
+
+	bool SupportNonUniformScale
+	<
+		string UIGroup = "Normal Group";
+		string UIName = "Support Non-Uniform Scale";
+	> = true;
+
+} //end UpdatePerObject cbuffer
+
+//------------------------------------
+// external includes
+//------------------------------------
+// Maya includes
+#include "mayaLights.fxh"
+
+//------------------------------------
+// Hardware Fog parameters
+//------------------------------------
+bool MayaHwFogEnabled : HardwareFogEnabled < string UIWidget = "None"; > = false;
+int MayaHwFogMode : HardwareFogMode < string UIWidget = "None"; > = 0;
+float MayaHwFogStart : HardwareFogStart < string UIWidget = "None"; > = 0.0f;
+float MayaHwFogEnd : HardwareFogEnd < string UIWidget = "None"; > = 100.0f;
+float MayaHwFogDensity : HardwareFogDensity < string UIWidget = "None"; > = 0.1f;
+float4 MayaHwFogColor : HardwareFogColor < string UIWidget = "None"; > = { 0.5f, 0.5f, 0.5f , 1.0f };
+
+//------------------------------------
+// external includes
+//------------------------------------
+// Maya includes
+#include "mayaUtils.fxh"
+
+#include "functions_structs.fxh"
+//#include "cookTorranceBRDF.fxh"
+#include "bigdBRDF.fxh"
+
+#include "buildLightArray.fxh"
 
 //::begin shader
-
-//------------------------------------
-// Light parameters
-//------------------------------------
-cbuffer UpdateLights : register(b2)
-{
-    // ---------------------------------------------
-    // Light 0 GROUP
-    // ---------------------------------------------
-    // This value is controlled by Maya to tell us if a light should be calculated
-    // For example the artist may disable a light in the scene, or choose to see only the selected light
-    // This flag allows Maya to tell our shader not to contribute this light into the lighting
-    bool light0Enable : LIGHTENABLE
-        <
-        string Object = "Light 0";  // UI Group for lights, auto-closed
-        string UIName = "Enable Light 0";
-        int UIOrder = 20;
-    #ifdef _MAYA_
-        > = false;  // maya manages lights itself and defaults to no lights
-    #else
-        > = true;   // in 3dsMax we should have the default light enabled
-    #endif
-
-    // follows LightParameterInfo::ELightType
-    // spot = 2, point = 3, directional = 4, ambient = 5,
-    int light0Type : LIGHTTYPE
-    <
-        string Object = "Light 0";
-        string UIName = "Light 0 Type";
-        string UIFieldNames ="None:Default:Spot:Point:Directional:Ambient";
-        int UIOrder = 21;
-    > = 2;  // default to spot so the cone angle etc work when "Use Shader Settings" option is used
-
-    float3 light0Pos : POSITION 
-    < 
-        string Object = "Light 0";
-        string UIName = "Light 0 Position"; 
-        string Space = "World"; 
-        int UIOrder = 22;
-    > = {100.0f, 100.0f, 100.0f}; 
-
-    float3 light0Color : LIGHTCOLOR 
-    <
-        string Object = "Light 0";
-        string UIName = "Light 0 Color"; 
-        string UIWidget = "Color"; 
-        int UIOrder = 23;
-    > = { 1.0f, 1.0f, 1.0f};
-
-    float light0Intensity : LIGHTINTENSITY 
-    <
-        string Object = "Light 0";
-        string UIName = "Light 0 Intensity"; 
-        int UIOrder = 24;
-    > = { 1.0f };
-
-    float3 light0Dir : DIRECTION 
-    < 
-        string Object = "Light 0";
-        string UIName = "Light 0 Direction"; 
-        string Space = "World"; 
-        int UIOrder = 25;
-    > = {100.0f, 100.0f, 100.0f}; 
-
-    float light0ConeAngle : HOTSPOT // In radians
-    <
-        string Object = "Light 0";
-        string UIName = "Light 0 Cone Angle"; 
-        float UIMin = 0;
-        float UIMax = PI/2;
-        int UIOrder = 26;
-    > = { 0.46f };
-
-    float light0FallOff : FALLOFF // In radians. Should be HIGHER then cone angle or lighted area will invert
-    <
-        string Object = "Light 0";
-        string UIName = "Light 0 Penumbra Angle"; 
-        float UIMin = 0;
-        float UIMax = PI/2;
-        int UIOrder = 27;
-    > = { 0.7f };
-
-    float light0AttenScale : DECAYRATE
-    <
-        string Object = "Light 0";
-        string UIName = "Light 0 Decay";
-        int UIOrder = 28;
-    > = {0.0};
-
-    bool light0ShadowOn : SHADOWFLAG
-    <
-        string Object = "Light 0";
-        string UIName = "Light 0 Casts Shadow";
-        string UIWidget = "None";
-        int UIOrder = 29;
-    > = true;
-
-    float4x4 light0Matrix : SHADOWMAPMATRIX     
-    < 
-        string Object = "Light 0";
-        string UIWidget = "None"; 
-    >;
-} //end lights cbuffer
 
 //------------------------------------
 // DEBUG
@@ -751,7 +562,9 @@ int g_DebugMode
 struct vsInput
 {
     float3 m_Position       : POSITION0;
-    float4 m_VertColor      : COLOR0;
+
+    float4 m_AlbedoRGBA     : COLOR0;
+	float4 m_SpcRghMetAO    : COLOR1;
 
     float2 m_UV0            : TEXCOORD0;
 
@@ -767,7 +580,9 @@ struct vsInput
 struct VsOutput 
 {
     float4      m_position       : SV_POSITION;
-    float4      m_vertColor      : COLOR;
+
+    float4      m_albedoRGBA     : COLOR0;
+	float4		m_spcRghMetAO    : COLOR1;
     
     float2      m_uv0            : TEXCOORD0;
 
@@ -802,13 +617,17 @@ VsOutput vsMain(vsInput vIN)
     OUT.m_worldPosition = mul(float4(vIN.m_Position, 1), World);
 
 	//Interpolate and ouput vertex color
-	OUT.m_vertColor.rgb = vIN.m_VertColor.rgb;
-	OUT.m_vertColor.w = vIN.m_VertColor.w;
+	OUT.m_albedoRGBA.rgb = vIN.m_AlbedoRGBA.rgb;
+	OUT.m_albedoRGBA.w = vIN.m_AlbedoRGBA.w;
+
+	OUT.m_spcRghMetAO.rgb = vIN.m_SpcRghMetAO.rgb;
+	OUT.m_spcRghMetAO.w = vIN.m_SpcRghMetAO.w;
 
 	// setup Gamma
 	float gammaCexp = linearSpaceLighting ? gammaCorrectionValue : 1.0;
 
-	OUT.m_vertColor.rgb = linearVertexColor ? pow(vIN.m_VertColor.rgb, gammaCexp) : OUT.m_vertColor.rgb;
+	// convert sRGB color per-vertex to linear?
+	OUT.m_albedoRGBA.rgb = linearVertexColor ? pow(vIN.m_AlbedoRGBA.rgb, gammaCexp) : OUT.m_albedoRGBA.rgb;
 
     // Pass through texture coordinates
     // flip Y for Maya
@@ -861,73 +680,29 @@ VsOutput vsMain(vsInput vIN)
     return OUT;
 }
 
-#define SHADOW_FILTER_TAPS_CNT 10
-float2 SuperFilterTaps[SHADOW_FILTER_TAPS_CNT]
-<
-string UIWidget = "None";
-> =
-{
-    { -0.84052f, -0.073954f },
-    { -0.326235f, -0.40583f },
-    { -0.698464f, 0.457259f },
-    { -0.203356f, 0.6205847f },
-    { 0.96345f, -0.194353f },
-    { 0.473434f, -0.480026f },
-    { 0.519454f, 0.767034f },
-    { 0.185461f, -0.8945231f },
-    { 0.507351f, 0.064963f },
-    { -0.321932f, 0.5954349f }
-};
-
-float shadowMapTexelSize
-<
-	string UIWidget = "None";
-> = { 0.00195313 }; // (1.0f / 512)
-
-/**
-@struct PsOutput
-@brief Output that written to the render target
-*/
-struct PsOutput  // was APPDATA
-{
-	float4 m_Color			: SV_TARGET;
-};
-
-// Calculate a light:
-struct lightOutD
-{
-    float   Specular;
-    float3  Color;
-};
-
-// Calculate a light:
-struct lightOutCT
-{
-    float   Specular;
-    float3  Color;
-};
-
-//------------------------------------
-// external includes
-//------------------------------------
-#include "functions_structs.fxh"
-//#include "cookTorranceBRDF.fxh"
-#include "bigdBRDF.fxh"
-
-float3 RGBMDecode ( float4 rgbm, float hdrExp, float gammaExp ) 
-{
-    float3 upackRGBhdr = (rgbm.bgr * rgbm.a) * hdrExp;
-    float3 rgbLin = pow(upackRGBhdr.rgb, gammaExp);
-    return rgbLin;
-}
-
-
 //------------------------------------
 // pixel shader
 //------------------------------------
-float4 pMain(VsOutput pIN, bool FrontFace : SV_IsFrontFace) : SV_Target
+PsOutput pMain(VsOutput pIN, bool FrontFace : SV_IsFrontFace) : SV_Target
 {  
-	//PsOutput o;
+	PsOutput o;
+
+	// MAYA | MAX Stuff
+	#ifdef _3DSMAX_
+		FrontFace = !FrontFace;
+	#endif
+
+	//hasVertexAlpha || hasAlpha || useCutoutAlpha
+	float4 cBaseMap = AlbedoTexture.Sample(SamplerAnisoWrap, pIN.m_uv0).rgba;
+	float transperancy = 1.0f;
+	if (useCutoutAlpha)
+	{
+		transperancy = hasAlpha ? cBaseMap.a : transperancy;
+		transperancy = hasVertexAlpha ? (transperancy * pIN.m_albedoRGBA.a) : transperancy;
+
+		// clip as early as possible
+		clip(transperancy < OpacityMaskBias ? -1 : 1);
+	}
 	      
     // setup Gamma
     float gammaCorrectExp = linearSpaceLighting ? gammaCorrectionValue : 1.0;
@@ -990,7 +765,6 @@ float4 pMain(VsOutput pIN, bool FrontFace : SV_IsFrontFace) : SV_Target
     float3 albedo = pow(baseColor.rgb, gammaCorrectExp);
     if (useAlbedoMap)
     {
-        float3 cBaseMap = AlbedoTexture.Sample(SamplerAnisoWrap, pIN.m_uv0).rgb;
         albedo = pow(cBaseMap.rgb, gammaCorrectExp);
     }
 
@@ -1027,7 +801,7 @@ float4 pMain(VsOutput pIN, bool FrontFace : SV_IsFrontFace) : SV_Target
 
 	if (useVertexColorAO)
 	{
-		ambOcc *= pIN.m_vertColor.rgb;
+		ambOcc *= pIN.m_albedoRGBA.rgb;
 	}
     
     // cheap ambient
@@ -1109,7 +883,7 @@ float4 pMain(VsOutput pIN, bool FrontFace : SV_IsFrontFace) : SV_Target
     //float3 result = ambientColor * AmbientLightIntensity * opacity;
 
     // final alpha:
-    float transperancy = opacity;
+	transperancy = Opacity < 1.0f ? (transperancy * Opacity) : transperancy;
 
     float3 result = light0Total + ( (ambTotal + diffEnv + specEnv) * ambOcc);
 
@@ -1196,7 +970,9 @@ float4 pMain(VsOutput pIN, bool FrontFace : SV_IsFrontFace) : SV_Target
 	//o.m_Color = float4(result.rgb, transperancy);
 	//return o;
 
-	return float4(result.rgb, transperancy);
+	o.m_Color = float4(result.rgb, transperancy);
+
+	return o;
 }
 
 #ifdef _MAYA_
@@ -1236,7 +1012,7 @@ float4 pMain(VsOutput pIN, bool FrontFace : SV_IsFrontFace) : SV_Target
         Peel(IN);
 
         MultiOut2 OUT;
-        OUT.target0 = pMain(IN, FrontFace);
+        OUT.target0 = pMain(IN, FrontFace).m_Color;
         OUT.target1 = LinearDepth(IN);
         return OUT;
     }
@@ -1246,7 +1022,7 @@ float4 pMain(VsOutput pIN, bool FrontFace : SV_IsFrontFace) : SV_Target
         Peel(IN);
 
         MultiOut2 OUT;
-        OUT.target0 = pMain(IN, FrontFace);
+        OUT.target0 = pMain(IN, FrontFace).m_Color;
         OUT.target1 = DepthComplexity(OUT.target0.w);
         return OUT;
     }
@@ -1254,7 +1030,7 @@ float4 pMain(VsOutput pIN, bool FrontFace : SV_IsFrontFace) : SV_Target
     MultiOut2 fTransparentWeightedAvg(VsOutput IN, bool FrontFace : SV_IsFrontFace)
     {
         MultiOut2 OUT;
-        OUT.target0 = pMain(IN, FrontFace);
+        OUT.target0 = pMain(IN, FrontFace).m_Color;
         OUT.target1 = DepthComplexity(OUT.target0.w);
         return OUT;
     }
@@ -1296,7 +1072,7 @@ technique11 brdfShader
 <
     bool overridesDrawState = false;
     int isTransparent = 3;
-    string transparencyTest = "Opacity < 1.0";
+	string transparencyTest = "Opacity < 1.0";
 
 #ifdef _MAYA_
         // Tells Maya that the effect supports advanced transparency algorithm,

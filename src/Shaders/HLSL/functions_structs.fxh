@@ -1,8 +1,38 @@
 // shadertype=hlsl
 
 //------------------------------------
+// Structs
+//------------------------------------
+struct PsOutput
+{
+	float4 m_Color			: SV_TARGET;
+};
+
+// Calculate a light:
+struct lightOutD
+{
+    float   Specular;
+    float3  Color;
+};
+
+// Calculate a light:
+struct lightOutCT
+{
+    float   Specular;
+    float3  Color;
+};
+
+
+//------------------------------------
 // Functions
 //------------------------------------
+
+float3 RGBMDecode ( float4 rgbm, float hdrExp, float gammaExp ) 
+{
+    float3 upackRGBhdr = (rgbm.bgr * rgbm.a) * hdrExp;
+    float3 rgbLin = pow(upackRGBhdr.rgb, gammaExp);
+    return rgbLin;
+}
 
 float2 pickTexcoord(int index, float2 t0, float2 t1, float2 t2)
 {

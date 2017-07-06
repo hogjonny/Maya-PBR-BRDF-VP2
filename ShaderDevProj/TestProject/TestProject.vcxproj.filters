@@ -16,6 +16,12 @@
     <Filter Include="Assets">
       <UniqueIdentifier>{dd967a7a-b871-4cda-a425-ace86815bfa5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Assets\v1.0">
+      <UniqueIdentifier>{8a8e8559-bb30-42ac-97cb-d7493900941a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Assets\v2.0">
+      <UniqueIdentifier>{b37e539d-c2d9-4c65-ab26-60a75f1dd6be}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -23,22 +29,73 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\src\Shaders\HLSL\cookTorranceBRDF.fxh">
-      <Filter>Assets</Filter>
+    <None Include="..\..\src\Shaders\HLSL\v.1.0\mayaLights.fxh">
+      <Filter>Assets\v1.0</Filter>
     </None>
-    <None Include="..\..\src\Shaders\HLSL\functions_structs.fxh">
-      <Filter>Assets</Filter>
+    <None Include="..\..\src\Shaders\HLSL\v.1.0\mayaUtils.fxh">
+      <Filter>Assets\v1.0</Filter>
     </None>
-    <None Include="..\..\src\Shaders\HLSL\gameBRDF.fxh">
-      <Filter>Assets</Filter>
+    <None Include="..\..\src\Shaders\HLSL\v.1.0\samplers.fxh">
+      <Filter>Assets\v1.0</Filter>
     </None>
-    <None Include="..\..\src\Shaders\HLSL\bigdBRDF.fxh">
-      <Filter>Assets</Filter>
+    <None Include="..\..\src\Shaders\HLSL\v.1.0\bigdBRDF.fxh">
+      <Filter>Assets\v1.0</Filter>
+    </None>
+    <None Include="..\..\src\Shaders\HLSL\v.1.0\buildLightArray.fxh">
+      <Filter>Assets\v1.0</Filter>
+    </None>
+    <None Include="..\..\src\Shaders\HLSL\v.1.0\cookTorranceBRDF.fxh">
+      <Filter>Assets\v1.0</Filter>
+    </None>
+    <None Include="..\..\src\Shaders\HLSL\v.1.0\functions_structs.fxh">
+      <Filter>Assets\v1.0</Filter>
+    </None>
+    <None Include="..\..\src\Shaders\HLSL\v.1.0\gameBRDF.fxh">
+      <Filter>Assets\v1.0</Filter>
+    </None>
+    <None Include="..\..\src\Shaders\HLSL\v.2.0\mayaLightsShadowMaps.fxh">
+      <Filter>Assets\v2.0</Filter>
+    </None>
+    <None Include="..\..\src\Shaders\HLSL\v.2.0\mayaLightsUtilities.fxh">
+      <Filter>Assets\v2.0</Filter>
+    </None>
+    <None Include="..\..\src\Shaders\HLSL\v.2.0\mayaUtilities.fxh">
+      <Filter>Assets\v2.0</Filter>
+    </None>
+    <None Include="..\..\src\Shaders\HLSL\v.2.0\pbr.sif">
+      <Filter>Assets\v2.0</Filter>
+    </None>
+    <None Include="..\..\src\Shaders\HLSL\v.2.0\propertyNames.fxh">
+      <Filter>Assets\v2.0</Filter>
+    </None>
+    <None Include="..\..\src\Shaders\HLSL\v.2.0\samplers.fxh">
+      <Filter>Assets\v2.0</Filter>
+    </None>
+    <None Include="..\..\src\Shaders\HLSL\v.2.0\approxToneMapping.fxh">
+      <Filter>Assets\v2.0</Filter>
+    </None>
+    <None Include="..\..\src\Shaders\HLSL\v.2.0\maxUtilities.fxh">
+      <Filter>Assets\v2.0</Filter>
+    </None>
+    <None Include="..\..\src\Shaders\HLSL\v.2.0\mayaLights.fxh">
+      <Filter>Assets\v2.0</Filter>
+    </None>
+    <None Include="..\..\src\Shaders\HLSL\v.2.0\lighting.sif">
+      <Filter>Assets\v2.0</Filter>
+    </None>
+    <None Include="..\..\src\Shaders\HLSL\v.2.0\pbr_shader_ui.fxh">
+      <Filter>Assets\v2.0</Filter>
+    </None>
+    <None Include="..\..\src\Shaders\HLSL\v.1.0\propertyNames.fxh">
+      <Filter>Assets\v1.0</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="..\..\src\Shaders\HLSL\mayaVP2_pbrBRDF.fx">
-      <Filter>Assets</Filter>
+    <FxCompile Include="..\..\src\Shaders\HLSL\v.1.0\mayaVP2_pbrBRDF.fx">
+      <Filter>Assets\v1.0</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\src\Shaders\HLSL\v.2.0\uv0bn-pbs_IBLenv.fx">
+      <Filter>Assets\v2.0</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

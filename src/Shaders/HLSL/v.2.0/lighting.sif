@@ -1,0 +1,272 @@
+/**
+@file lighting.sif
+@brief Shader include file that defines constants, structures and functions to support various lighting models
+*/
+
+//static const float cg_PI = 3.141592f;
+
+/*
+Function Declarations
+*/
+float calculate_specular_term(float3 v, float3 n, float3 l, float specular_power, float cosine_term);
+float calculate_specular_term_normalized(float3 v, float3 n, float3 l, float specular_power, float cosine_term);
+float calculate_specular_term_fresnel(float3 v, float3 n, float3 l, float specular_power, float F0, float cosine_term);
+float calculate_specular_term_physically(float3 v, float3 n, float3 l, float specular_power, float F0, float cosine_term);
+
+/**
+@struct LightAmbient
+@brief Structure used to represent ambient lights for use in shaders
+*/
+struct LightAmbient
+{
+	float4 m_diffuse;
+};
+
+/**
+@struct LightDirection
+@brief Structure used to represent directional lights for use in shaders
+*/
+struct LightDirection
+{
+	float4 m_diffuse;
+	float4 m_specular;
+	float4 m_direction;
+};
+
+/**
+@struct LightPoint
+@brief Structure used to represent point lights for use in shaders
+*/
+struct LightPoint
+{
+	float4 m_diffuse;
+	float4 m_specular;
+	float4 m_position;
+	float4 m_attenuation;
+};
+
+/**
+@struct LightSpot
+@brief Structure used to represent spot lights for use in shaders
+*/
+struct LightSpot
+{
+	float4 m_diffuse;
+	float4 m_specular;
+	float4 m_direction;
+	float4 m_position;
+	float4 m_attenuation;
+	float4 m_cone;
+};
+
+/**
+@brief Calculate the specular term for a given view vector, light direction, specular power and
+       cosine_term = saturate(n_dot_l).  No normalization and conservation of energy
+@return float - specular_term = phong_blinn * cosine_term
+@param[in] v - the vector from the point to the view position
+@param[in] n - the normal a this point
+@param[in] l - the light vector (from this point to the light)
+@param[in] specular_power - aka shine
+@param[in] cosine_term - saturation of N dot L, likely calculated for diffuse lighting already
+*/
+float calculate_specular_term(float3 v, float3 n, float3 l, float specular_power, float cosine_term)
+{
+	float3 h = normalize(v + l);
+	float n_dot_h = saturate(dot(n, h));
+	float phong_blinn = pow(n_dot_h, specular_power);
+	return phong_blinn * cosine_term;
+}
+
+/**
+@brief Calculate the double sided specular term for a given view vector, light direction, specular power and
+       cosine_term = saturate(n_dot_l).  No normalization and conservation of energy
+@return float - specular_term = phong_blinn * cosine_term
+@param[in] v - the vector from the point to the view position
+@param[in] n - the normal a this point
+@param[in] l - the light vector (from this point to the light)
+@param[in] specular_power - aka shine
+@param[in] cosine_term - saturation of N dot L, likely calculated for diffuse lighting already
+*/
+float calculate_specular_term_double_sided(float3 v, float3 n, float3 l, float specular_power, float cosine_term)
+{
+	float3 h = normalize(v + l);
+	float n_dot_h = abs(dot(n, h));
+
+	float phong_blinn = pow(n_dot_h, specular_power);
+	return phong_blinn * cosine_term;
+}
+
+/**
+@brief Calculate the specular term for a given view vector, light direction, specular power and
+	   cosine_term = saturate(n_dot_l).  Normalization for conservation of energy
+@return float - specular_term = phong_blinn * normalization_term * cosine_term
+@param[in] v - the vector from the point to the view position
+@param[in] n - the normal a this point
+@param[in] l - the light vector (from this point to the light)
+@param[in] specular_power - aka shine
+@param[in] cosine_term - saturation of N dot L, likely calculated for diffuse lighting already
+*/
+float calculate_specular_term_normalized(float3 v, float3 n, float3 l, float specular_power, float cosine_term)
+{
+	float3 h = normalize(v + l);
+	float n_dot_h = saturate(dot(n, h));
+	float normalization_term = (specular_power + 2.0f) / 2.0f * cg_PI;
+	float phong_blinn = pow(n_dot_h, specular_power);
+
+	return phong_blinn * normalization_term * cosine_term;
+}
+
+/**
+@brief Calculate the specular double sided term for a given view vector, light direction, specular power and
+	   cosine_term = saturate(n_dot_l).  Normalization for conservation of energy
+@return float - specular_term = phong_blinn * normalization_term * cosine_term
+@param[in] v - the vector from the point to the view position
+@param[in] n - the normal a this point
+@param[in] l - the light vector (from this point to the light)
+@param[in] specular_power - aka shine
+@param[in] cosine_term - saturation of N dot L, likely calculated for diffuse lighting already
+*/
+float calculate_specular_term_normalized_double_sided(float3 v, float3 n, float3 l, float specular_power, float cosine_term)
+{
+	float3 h = normalize(v + l);
+	float n_dot_h = abs(dot(n, h));
+
+	float normalization_term = (specular_power + 2.0f) / 2.0f * cg_PI;
+	float phong_blinn = pow(n_dot_h, specular_power);
+
+	return phong_blinn * normalization_term * cosine_term;
+}
+
+/**
+@brief Calculate the specular term with fresnel contribution and normalization for a given view vector, light direction,
+	   specular power, cosine_term = saturate(n_dot_l) and fresnel scalar
+@return float - specular_term = phong_blinn * normalization_term * cosine_term * fresnel_term
+@param[in] v - the vector from the point to the view position
+@param[in] n - the normal a this point
+@param[in] l - the light vector (from this point to the light)
+@param[in] specular_power - aka shine
+@param[in] F0 - fresnel scalar
+@param[in] cosine_term - saturation of N dot L, likely calculated for diffuse lighting already
+*/
+float calculate_specular_term_fresnel(float3 v, float3 n, float3 l, float specular_power, float F0, float cosine_term)
+{
+	float3 h = normalize(v + l);
+	float n_dot_h = saturate(dot(n, h));
+	float normalization_term = (specular_power + 2.0f) / 2.0f * cg_PI;
+	float phong_blinn = pow(n_dot_h, specular_power);
+
+	float base = 1.0f - saturate(dot(v, h));
+	float exponential = pow(base, 5.0f);
+	float fresnel_term = exponential + F0 * (1.0f - exponential);
+
+	// This is the way that call of duty did it...  The fresnel term calcualtion seems wrong to me
+	//float base = 1.0f - saturate(dot(h, l));
+	//float exponential = pow(base, 5.0f);
+	//float fresnel_term = F0 + (1.0f - F0) * exponential;
+
+	return phong_blinn * normalization_term * cosine_term * fresnel_term;
+}
+
+/**
+@brief Calculate the double sided specular term with fresnel contribution and normalization for a given view vector, light direction,
+	   specular power, cosine_term = saturate(n_dot_l) and fresnel scalar
+@return float - specular_term = phong_blinn * normalization_term * cosine_term * fresnel_term
+@param[in] v - the vector from the point to the view position
+@param[in] n - the normal a this point
+@param[in] l - the light vector (from this point to the light)
+@param[in] specular_power - aka shine
+@param[in] F0 - fresnel scalar
+@param[in] cosine_term - saturation of N dot L, likely calculated for diffuse lighting already
+*/
+float calculate_specular_term_fresnel_double_sided(float3 v, float3 n, float3 l, float specular_power, float F0, float cosine_term)
+{
+	float3 h = normalize(v + l);
+	float n_dot_h = abs(dot(n, h));
+
+	float normalization_term = (specular_power + 2.0f) / 2.0f * cg_PI;
+	float phong_blinn = pow(n_dot_h, specular_power);
+
+	float base = 1.0f - saturate(dot(v, h));
+	float exponential = pow(base, 5.0f);
+	float fresnel_term = exponential + F0 * (1.0f - exponential);
+
+	// This is the way that call of duty did it...  The fresnel term calcualtion seems wrong to me
+	//float base = 1.0f - saturate(dot(h, l));
+	//float exponential = pow(base, 5.0f);
+	//float fresnel_term = F0 + (1.0f - F0) * exponential;
+
+	return phong_blinn * normalization_term * cosine_term * fresnel_term;
+}
+
+/**
+@brief Calculate the specular term with fresnel contribution and normalization for a given view vector, light direction,
+	   specular power, cosine_term = saturate(n_dot_l) and fresnel scalar
+@return float - specular_term = phong_blinn * normalization_term * cosine_term * fresnel_term * visibility_term
+@param[in] v - the vector from the point to the view position
+@param[in] n - the normal a this point
+@param[in] l - the light vector (from this point to the light)
+@param[in] specular_power - aka shine
+@param[in] F0 - fresnel scalar
+@param[in] cosine_term - saturation of N dot L, likely calculated for diffuse lighting already
+*/
+float calculate_specular_term_physically(float3 v, float3 n, float3 l, float specular_power, float F0, float cosine_term)
+{
+	float3 h = normalize(v + l);
+	float n_dot_h = saturate(dot(n, h));
+	float normalization_term = (specular_power + 2.0f) / 2.0f * cg_PI;
+	float phong_blinn = pow(n_dot_h, specular_power);
+
+	float base = 1.0f - saturate(dot(v, h));
+	float exponential = pow(base, 5.0f);
+	float fresnel_term = exponential + F0 * (1.0f - exponential);
+
+	// This is the way that call of duty did it...  The fresnel term calcualtion seems wrong to me
+	//float base = 1.0f - saturate(dot(h, l));
+	//float exponential = pow(base, 5.0f);
+	//float fresnel_term = F0 + (1.0f - F0) * exponential;
+
+	float n_dot_v = saturate(dot(n, v));
+	float n_dot_l = cosine_term;
+	float alpha = rsqrt(cg_PI * 0.25f * specular_power + (cg_PI * 0.5f));
+	float visibility_term = ( n_dot_l * ( 1.0f - alpha ) + alpha ) * ( n_dot_v * ( 1.0f - alpha ) + alpha );
+	visibility_term = rcp(visibility_term);
+
+	return phong_blinn * normalization_term * cosine_term * fresnel_term * visibility_term;
+}
+
+/**
+@brief Calculate the double sided specular term with fresnel contribution and normalization for a given view vector, light direction,
+	   specular power, cosine_term = saturate(n_dot_l) and fresnel scalar
+@return float - specular_term = phong_blinn * normalization_term * cosine_term * fresnel_term * visibility_term
+@param[in] v - the vector from the point to the view position
+@param[in] n - the normal a this point
+@param[in] l - the light vector (from this point to the light)
+@param[in] specular_power - aka shine
+@param[in] F0 - fresnel scalar
+@param[in] cosine_term - saturation of N dot L, likely calculated for diffuse lighting already
+*/
+float calculate_specular_term_physically_double_sided(float3 v, float3 n, float3 l, float specular_power, float F0, float cosine_term)
+{
+	float3 h = normalize(v + l);
+	float n_dot_h = abs(dot(n, h));
+
+	float normalization_term = (specular_power + 2.0f) / 2.0f * cg_PI;
+	float phong_blinn = pow(n_dot_h, specular_power);
+
+	float base = 1.0f - saturate(dot(v, h));
+	float exponential = pow(base, 5.0f);
+	float fresnel_term = exponential + F0 * (1.0f - exponential);
+
+	// This is the way that call of duty did it...  The fresnel term calcualtion seems wrong to me
+	//float base = 1.0f - saturate(dot(h, l));
+	//float exponential = pow(base, 5.0f);
+	//float fresnel_term = F0 + (1.0f - F0) * exponential;
+
+	float n_dot_v = saturate(dot(n, v));
+	float n_dot_l = cosine_term;
+	float alpha = rsqrt(cg_PI * 0.25f * specular_power + (cg_PI * 0.5f));
+	float visibility_term = ( n_dot_l * ( 1.0f - alpha ) + alpha ) * ( n_dot_v * ( 1.0f - alpha ) + alpha );
+	visibility_term = rcp(visibility_term);
+
+	return phong_blinn * normalization_term * cosine_term * fresnel_term * visibility_term;
+}

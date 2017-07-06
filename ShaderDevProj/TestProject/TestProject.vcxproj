@@ -68,19 +68,37 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\src\Shaders\HLSL\bigdBRDF.fxh">
-      <FileType>Document</FileType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">5.0</ShaderModel>
-    </None>
-    <None Include="..\..\src\Shaders\HLSL\cookTorranceBRDF.fxh" />
-    <None Include="..\..\src\Shaders\HLSL\functions_structs.fxh" />
-    <None Include="..\..\src\Shaders\HLSL\gameBRDF.fxh" />
+    <None Include="..\..\src\Shaders\HLSL\v.1.0\bigdBRDF.fxh" />
+    <None Include="..\..\src\Shaders\HLSL\v.1.0\buildLightArray.fxh" />
+    <None Include="..\..\src\Shaders\HLSL\v.1.0\cookTorranceBRDF.fxh" />
+    <None Include="..\..\src\Shaders\HLSL\v.1.0\functions_structs.fxh" />
+    <None Include="..\..\src\Shaders\HLSL\v.1.0\gameBRDF.fxh" />
+    <None Include="..\..\src\Shaders\HLSL\v.1.0\mayaLights.fxh" />
+    <None Include="..\..\src\Shaders\HLSL\v.1.0\mayaUtils.fxh" />
+    <None Include="..\..\src\Shaders\HLSL\v.1.0\propertyNames.fxh" />
+    <None Include="..\..\src\Shaders\HLSL\v.1.0\samplers.fxh" />
+    <None Include="..\..\src\Shaders\HLSL\v.2.0\approxToneMapping.fxh" />
+    <None Include="..\..\src\Shaders\HLSL\v.2.0\lighting.sif" />
+    <None Include="..\..\src\Shaders\HLSL\v.2.0\maxUtilities.fxh" />
+    <None Include="..\..\src\Shaders\HLSL\v.2.0\mayaLights.fxh" />
+    <None Include="..\..\src\Shaders\HLSL\v.2.0\mayaLightsShadowMaps.fxh" />
+    <None Include="..\..\src\Shaders\HLSL\v.2.0\mayaLightsUtilities.fxh" />
+    <None Include="..\..\src\Shaders\HLSL\v.2.0\mayaUtilities.fxh" />
+    <None Include="..\..\src\Shaders\HLSL\v.2.0\pbr.sif" />
+    <None Include="..\..\src\Shaders\HLSL\v.2.0\propertyNames.fxh" />
+    <None Include="..\..\src\Shaders\HLSL\v.2.0\samplers.fxh" />
+    <None Include="..\..\src\Shaders\HLSL\v.2.0\pbr_shader_ui.fxh" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="..\..\src\Shaders\HLSL\mayaVP2_pbrBRDF.fx">
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">5.0</ShaderModel>
+    <FxCompile Include="..\..\src\Shaders\HLSL\v.1.0\mayaVP2_pbrBRDF.fx">
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">pMain</EntryPointName>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Effect</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="..\..\src\Shaders\HLSL\v.2.0\uv0bn-pbs_IBLenv.fx">
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">pMain</EntryPointName>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
     </FxCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

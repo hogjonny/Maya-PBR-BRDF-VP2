@@ -1,0 +1,600 @@
+/**
+@file pbr.sif
+@brief Shader include file that defines constants, structures and functions to support various pbr lighting functions
+*/
+
+/**
+This value is now coming from mayalights.fxh (because I think that is the only file it's used in)
+*/
+//static const float cg_PI = 3.141592f;
+
+/**
+Function Declarations
+To Do: are some missing?
+*/
+float G1V(float NdotV, float k);
+float LightingFuncGGX_REF(float3 N, float3 V, float3 L, float roughness, float F0);
+float3 ComputeDiffuseEnergyConservation(float3 specularColor, float3 fresnelSpec);
+float3 ComputeLightDiffuse(float3 albedoColor, float3 specularColor, float3 cSpec);
+
+
+/**
+To Do: document this function
+*/
+float Pow5( float x )
+{
+	float xx = x*x;
+	return xx * xx * x;
+}
+
+
+/**
+To Do: document this function
+*/
+float3 ComputeDiffuseEnergyConservation(float3 specularColor, float3 fresnelSpec)
+{
+    return (float3(1.0f, 1.0f, 1.0f) - specularColor);
+}
+
+
+/**
+To Do: document this function
+*/
+float3 ComputeLightDiffuse(float3 albedoColor, float3 specularColor, float3 cSpec)
+{
+    return albedoColor * ComputeDiffuseEnergyConservation(specularColor, cSpec);
+}
+
+
+/**
+@breif This is here for reference (it's glsl code), it is not used
+computeLigtht(float3 albedoColor, float3 specularColor, float3 normal, float3 viewDir, float3 lightDir, float roughness, float metallic)
+{
+ cSpec = LightingFuncGGX_REF(normalN.xyz, viewDir.xyz, lightDir.xyz, roughness, metallic);  
+ float3 cDiff = ComputeLightDiffuse(realAlbedo.xyz, realSpecularColor.xyz, float3(cSpec));
+ float NdotL = saturate(dot(normalN.xyz, lightDir.xyz));
+ gl_FragColor = lightColor *  NdotL * (cDiff + cSpec * realSpecularColor);
+}
+*/
+
+
+/**
+To Do: document this function
+*/
+float adjustRoughness ( float inputRoughness , float avgNormalLength )
+{
+	// Based on The Order : 1886 SIGGRAPH course notes implementation
+	float variance = 0.0f;
+	
+	if ( avgNormalLength < 1.0f)
+	{
+ 		float avgNormLen2 = avgNormalLength * avgNormalLength;
+ 		float kappa = (3.0f * avgNormalLength - avgNormalLength * avgNormLen2) / (1.0f - avgNormLen2);
+ 		variance = 1.0f / (2.0f * kappa);
+ 	}
+ 	return sqrt(inputRoughness * inputRoughness + variance);
+}
+
+
+/**
+@breif Converts a Beckmann roughness parameter to a Phong specular power
+*/
+float RoughnessToSpecPower(in float m)
+{
+    return 2.0 / (m * m) - 2.0;
+}
+
+
+/**
+@breif Converts a Blinn-Phong specular power to a Beckmann roughness parameter
+*/
+float SpecPowerToRoughness(in float s)
+{
+    return sqrt(2.0 / (s + 2.0));
+}
+
+
+/**
+//https://mynameismjp.wordpress.com/2013/07/28/siggraph-follow-up/
+void main()
+{
+	....
+	#if UseToksvig_
+	float s = RoughnessToSpecPower(roughness);
+	float ft = normalMapLen / lerp(s, 1.0, normalMapLen);
+	ft = max(ft, 0.01);
+	roughness = SpecPowerToRoughness(ft * s);
+	#endif
+	....
+}
+*/
+
+
+/**
+optimized-ggx.glsl
+This file describes several optimizations you can make when creating a GGX shader.
+AUTHOR: John Hable
+LICENSE:
+This is free and unencumbered software released into the public domain.
+Anyone is free to copy, modify, publish, use, comcg_PIle, sell, or
+distribute this software, either in source code form or as a comcg_PIled
+binary, for any purpose, commercial or non-commercial, and by any
+means.
+In jurisdictions that recognize copyright laws, the author or authors
+of this software dedicate any and all copyright interest in the
+software to the public domain. We make this dedication for the benefit
+of the public at large and to the detriment of our heirs and
+successors. We intend this dedication to be an overt act of
+relinquishment in perpetuity of all present and future rights to this
+software under copyright law.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+For more information, please refer to <http://unlicense.org/>
+*/
+
+
+/**
+optimized-ggx.glsl
+Taken from optimized-ggx.hlsl by John Hable
+http://www.filmicworlds.com/2014/04/29/optimizing-ggx-update/
+*/
+float G1V(float NdotV, float k)
+{
+   return 1.0f/(NdotV*(1.0f-k)+k);
+}
+
+
+/**
+optimized-ggx.glsl
+Taken from optimized-ggx.hlsl by John Hable
+http://www.filmicworlds.com/2014/04/29/optimizing-ggx-update/
+*/
+float LightingFuncGGX_REF(float3 N, float3 V, float3 L, float roughness, float F0)
+{
+        float alpha = roughness*roughness;
+
+        // half angle
+        float3 H = normalize(V+L);
+
+        float NdotL = saturate(dot(N,L));
+        float NdotV = saturate(dot(N,V));
+        float NdotH = saturate(dot(N,H));
+        float LdotH = saturate(dot(L,H));
+
+        float F, D, vis;
+
+        // D
+        float alphaSqr = alpha*alpha;
+        float denom = NdotH * NdotH *(alphaSqr-1.0) + 1.0;
+        D = alphaSqr/(cg_PI * denom * denom);
+
+        // F
+        float LdotH5 = pow(1.0-LdotH,5.0);
+        F = F0 + (1.0-F0)*(LdotH5);
+
+        // V
+        float k = alpha/2.0;
+        vis = G1V(NdotL,k)*G1V(NdotV,k);
+
+        float specular = NdotL * D * F * vis;
+        return specular;
+}
+
+
+/**
+optimized-ggx.glsl
+Taken from optimized-ggx.hlsl by John Hable
+http://www.filmicworlds.com/2014/04/29/optimizing-ggx-update/
+@breif Altered, dot products and roughness alpha values are passed in
+*/
+float LightingFuncGGX_REF(float3 H, float NdotL, float NdotV, float NdotH, float LdotH, float roughA, float roughA2, float F0)
+{
+        float F, D, vis;
+
+        // D
+        float denom = NdotH * NdotH * ( roughA2 - 1.0f) + 1.0f;
+        D = roughA2 / ( cg_PI * denom * denom );
+
+        // F
+		// this is energy conserving specular reflection
+        float LdotH5 = Pow5( 1.0f - LdotH);
+        F = F0 + ( 1.0f - F0 ) * ( LdotH5 );
+
+        // V
+        float k = roughA / 2.0f;
+        vis = G1V( NdotL, k ) * G1V( NdotV, k );
+
+        float specular = NdotL * D * F * vis;
+        return specular;
+}
+
+
+/**
+optimized-ggx.glsl
+Taken from optimized-ggx.hlsl by John Hable
+http://www.filmicworlds.com/2014/04/29/optimizing-ggx-update/
+*/
+float LightingFuncGGX_OPT1(float3 N, float3 V, float3 L, float roughness, float F0)
+{
+    float alpha = roughness*roughness;
+
+    float3 H = normalize(V+L);
+
+    float NdotL = saturate(dot(N,L));
+    float LdotH = saturate(dot(L,H));
+    float NdotH = saturate(dot(N,H));
+
+    float F, D, vis;
+
+    // D
+    float alphaSqr = alpha*alpha;
+    //float cg_PI = 3.14159f;
+    float denom = NdotH * NdotH *(alphaSqr-1.0) + 1.0f;
+    D = alphaSqr/(cg_PI * denom * denom);
+
+    // F
+    float LdotH5 = pow(1.0f-LdotH,5);
+    F = F0 + (1.0-F0)*(LdotH5);
+
+    // V
+    float k = alpha/2.0f;
+    vis = G1V(LdotH,k)*G1V(LdotH,k);
+
+    float specular = NdotL * D * F * vis;
+    return specular;
+}
+
+
+/**
+optimized-ggx.glsl
+Taken from optimized-ggx.hlsl by John Hable
+http://www.filmicworlds.com/2014/04/29/optimizing-ggx-update/
+*/
+float LightingFuncGGX_OPT2(float3 N, float3 V, float3 L, float roughness, float F0)
+{
+    float alpha = roughness*roughness;
+
+    float3 H = normalize(V+L);
+
+    float NdotL = saturate(dot(N,L));
+
+    float LdotH = saturate(dot(L,H));
+    float NdotH = saturate(dot(N,H));
+
+    float F, D, vis;
+
+    // D
+    float alphaSqr = alpha*alpha;
+    //float cg_PI = 3.14159f;
+    float denom = NdotH * NdotH *(alphaSqr-1.0) + 1.0f;
+    D = alphaSqr/(cg_PI * denom * denom);
+
+    // F
+    float LdotH5 = pow(1.0f-LdotH,5);
+    F = F0 + (1.0-F0)*(LdotH5);
+
+    // V
+    float k = alpha/2.0f;
+    float k2 = k*k;
+    float invK2 = 1.0f-k2;
+    vis = rcp(LdotH*LdotH*invK2 + k2);
+
+    float specular = NdotL * D * F * vis;
+    return specular;
+}
+
+
+/**
+optimized-ggx.glsl
+Taken from optimized-ggx.hlsl by John Hable
+http://www.filmicworlds.com/2014/04/29/optimizing-ggx-update/
+*/
+float2 LightingFuncGGX_FV(float LdotH, float roughness)
+{
+    float alpha = roughness*roughness;
+
+    // F
+    float F_a, F_b;
+    float LdotH5 = pow(1.0f-LdotH,5);
+    F_a = 1.0f;
+    F_b = LdotH5;
+
+    // V
+    float vis;
+    float k = alpha/2.0f;
+    float k2 = k*k;
+    float invK2 = 1.0f-k2;
+    vis = rcp(LdotH*LdotH*invK2 + k2);
+
+    return float2(F_a*vis,F_b*vis);
+}
+
+
+/**
+optimized-ggx.glsl
+Taken from optimized-ggx.hlsl by John Hable
+http://www.filmicworlds.com/2014/04/29/optimizing-ggx-update/
+*/
+float LightingFuncGGX_D(float NdotH, float roughness)
+{
+    float alpha = roughness*roughness;
+    float alphaSqr = alpha*alpha;
+   //float cg_PI = 3.14159f;
+    float denom = NdotH * NdotH *(alphaSqr-1.0) + 1.0f;
+
+    float D = alphaSqr/(cg_PI * denom * denom);
+    return D;
+}
+
+
+/**
+optimized-ggx.glsl
+Taken from optimized-ggx.hlsl by John Hable
+http://www.filmicworlds.com/2014/04/29/optimizing-ggx-update/
+*/
+float LightingFuncGGX_OPT3(float3 N, float3 V, float3 L, float roughness, float F0)
+{
+    float3 H = normalize(V+L);
+
+    float NdotL = saturate(dot(N,L));
+    float LdotH = saturate(dot(L,H));
+    float NdotH = saturate(dot(N,H));
+
+    float D = LightingFuncGGX_D(NdotH,roughness);
+    float2 FV_helper = LightingFuncGGX_FV(LdotH,roughness);
+    float FV = F0*FV_helper.x + (1.0f-F0)*FV_helper.y;
+    float specular = NdotL * D * FV;
+
+    return specular;
+}
+
+
+/**
+@breif this is not used
+Another optimization borrowed from:
+https://github.com/bartwronski/CSharpRenderer/blob/master/shaders/optimized-ggx.hlsl
+
+float LightingFuncGGX_OPT4(float3 N, float3 V, float3 L, float roughness, float F0)
+{
+	float3 H = normalize(V+L);
+
+	float dotNL = saturate(dot(N,L));
+	float dotLH = saturate(dot(L,H));
+	float dotNH = saturate(dot(N,H));
+
+    float D = g_GGXBRDFDLUT.Sample(linearSampler, float2(Pow4(dotNH), roughness));
+	float2 FV_helper =
+        g_GGXBRDFFVLUT.Sample(linearSampler, float2(dotLH, roughness)).xy;
+
+	float FV = F0*FV_helper.x + (1.0f-F0)*FV_helper.y;
+	float specular = dotNL * D * FV;
+
+	return specular;
+}
+
+
+Another optimization borrowed from:
+https://github.com/bartwronski/CSharpRenderer/blob/master/shaders/optimized-ggx.hlsl
+This version includes Stephen Hill's optimization
+
+float LightingFuncGGX_OPT5(float3 N, float3 V, float3 L, float roughness, float F0)
+{
+	float3 H = normalize(V+L);
+
+	float dotNL = saturate(dot(N,L));
+	float dotLH = saturate(dot(L,H));
+	float dotNH = saturate(dot(N,H));
+
+    float D = g_GGXBRDFDLUT.Sample(linearSampler, float2(Pow4(dotNH), roughness)).x;
+	float2 FV_helper =
+        g_GGXBRDFFVLUT.Sample(linearSampler, float2(dotLH, roughness)).xy;
+
+	float FV = F0*FV_helper.x + FV_helper.y;
+	float specular = dotNL * D * FV;
+
+	return specular;
+}
+*/
+
+
+/**
+To Do: document this function
+*/
+float SchlickFresnel(float u)
+{
+    float m = clamp(1.0f - u, 0.0f, 1.0f);
+    float m2 = m * m;
+
+    return m2 * m2 * m; // pow(m,5)
+}
+
+
+/**
+@breif Stripped down version similar to Disney's PBR
+@reference: https://github.com/wdas/brdf/blob/master/src/brdfs/disney.brdf
+@param[in] N, Normals
+@param[in] L, Light Vec
+@param[in] V, View Vec
+@param[in] Cdlin, Color diffuse linear
+@param[in] metalA, Metalness
+@param[in] roughnessA, Roughness
+*/
+float3 bigD_DiffuseBRDF(float N, float L, float V, float3 Cdlin, float metalA, float roughnessA)
+{
+	float alpha = roughnessA * roughnessA;
+
+    float3 H = normalize( L + V );
+
+    float NdotL = saturate( dot( N,L ) );
+    float NdotV = saturate( dot( N,V ) );
+    float LdotH = saturate( dot( L,H ) );
+
+	float FL = SchlickFresnel(NdotL);
+    float FV = SchlickFresnel(NdotV);
+
+    float Fd90 = 0.5f + 2.0f * LdotH * LdotH * alpha;
+
+	float Fd = lerp(1.0f, Fd90, FL) * lerp(1.0f, Fd90, FV);
+
+	// look weird if not * NdotL but do that after
+	return (1.0f / cg_PI) * Fd * Cdlin * (1.0f - metalA);
+}
+
+
+/**
+@breif Altered, dot products and alpha are passed in
+@param[in] Cdlin, Color diffuse linear
+@param[in] metalA, Metalness
+@param[in] roughA, == roughnessA * roughnessA;
+@param[in] NdotL
+@param[in] NdotV
+@param[in] LdotH
+*/
+float3 bigD_DiffuseBRDF(float3 Cdlin, float metalA, float roughA, float NdotL, float NdotV, float LdotH)
+{
+	float FL = SchlickFresnel(NdotL);
+    float FV = SchlickFresnel(NdotV);
+
+    float Fd90 = 0.5f + 2.0f * LdotH * LdotH * roughA;
+
+	float Fd = lerp(1.0f, Fd90, FL) * lerp(1.0f, Fd90, FV);
+
+	// looks weird if not * NdotL but do that after return
+	return (1.0f / cg_PI) * Fd * Cdlin * (1.0f - metalA);
+}
+
+
+/**
+@breif Altered, dot products and alpha are passed in
+@breif This has to be multiplied by the Cdlin afterwards
+@param[in] metalA, Metalness
+@param[in] roughA, == roughnessA * roughnessA;
+@param[in] NdotL
+@param[in] NdotV
+@param[in] LdotH
+*/
+float bigD_DiffuseBRDF(float metalA, float roughA, float NdotL, float NdotV, float LdotH)
+{
+	float FL = SchlickFresnel(NdotL);
+    float FV = SchlickFresnel(NdotV);
+
+    float Fd90 = 0.5f + 2.0f * LdotH * LdotH * roughA;
+
+	float Fd = lerp(1.0f, Fd90, FL) * lerp(1.0f, Fd90, FV);
+
+	return (1.0f / cg_PI) * Fd * (1.0f - metalA);
+}
+
+
+/**
+@breif Altered, dot products and alpha are passed in
+@breif This has to be multiplied by the Cdlin afterwards
+@param[in] roughA, == roughnessA * roughnessA;
+@param[in] NdotL
+@param[in] NdotV
+@param[in] LdotH
+*/
+float bigD_DiffuseBRDF(float roughA, float NdotL, float NdotV, float LdotH)
+{
+	float FL = SchlickFresnel(NdotL);
+    float FV = SchlickFresnel(NdotV);
+
+    float Fd90 = 0.5f + 2.0f * LdotH * LdotH * roughA;
+
+	float Fd = lerp(1.0f, Fd90, FL) * lerp(1.0f, Fd90, FV);
+
+	return (1.0f / cg_PI) * Fd;
+}
+
+
+/**
+@breif this one has to be multiplied by albedo (Cdlin) after return
+@breif this is very similar to how Ogre3d handles disney sytle diffuse
+@param[in] NdotV
+@param[in] NdotL
+@param[in] VdotH
+@param[in] roughnessA
+@param[in] f0
+*/
+float3 bigD_DiffuseBRDF(float NdotV, float NdotL, float VdotH, float roughnessA, float3 f0)
+{
+    float Fd90 = 0.5f + 2.0f * roughnessA * VdotH * VdotH;
+    float3 invF0 = float3(1.0, 1.0, 1.0) - f0;
+    float dim = min(invF0.r, min(invF0.g, invF0.b));
+    float result = ((1.0 + (Fd90 - 1.0) * pow(1.0 - NdotL, 5.0 )) * (1.0 + (Fd90 - 1.0) * pow(1.0 - NdotV, 5.0 ))) * dim;
+    return float3(result, result, result);
+}
+
+
+/**
+Burley 2012, Physically-Based Shading at Disney
+I think this is pretty close to UE4 version
+*/
+float3 bigD_DiffuseBRDF( float3 cDlin, float roughnessA, float NdotV, float NdotL, float VdotH )
+{
+	float FD90 = 0.5f + 2.0f * VdotH * VdotH * roughnessA;
+	float FdV = 1.0f + (FD90 - 1.0f) * Pow5( 1.0f - NdotV );
+	float FdL = 1.0f + (FD90 - 1.0f) * Pow5( 1.0f - NdotL );
+	return cDlin * ( (1.0f / cg_PI) * FdV * FdL );
+}
+
+
+///**
+//Burley 2012, Physically-Based Shading at Disney
+//I think this is pretty close to UE4 version but is juast the term no color
+//*/
+//float bigD_DiffuseBRDF(float roughnessA, float NdotV, float NdotL, float VdotH )
+//{
+//	float FD90 = 0.5f + 2.0f * VdotH * VdotH * roughnessA;
+//	float FdV = 1.0f + (FD90 - 1.0f) * Pow5( 1.0f - NdotV );
+//	float FdL = 1.0f + (FD90 - 1.0f) * Pow5( 1.0f - NdotL );
+//	return (1.0f / cg_PI) * FdV * FdL;
+//}
+
+
+/**
+To Do: document this function
+*/
+float3 Fresnel_Schlick(float cosT, float3 F0)
+{
+  return F0 + (1-F0) * pow( 1 - cosT, 5);
+}
+
+
+/**
+@breif Roughness attenuated specular fresnel used for hemispherical ambient specular
+*/
+float3 Specular_F_Roughness(float3 cSpecLin, float roughnessA, float NdotV)
+{
+    // Sclick using roughness to attenuate fresnel.
+    return (cSpecLin * (max(1.0f-roughnessA, cSpecLin) - cSpecLin) * pow((1 - NdotV), 5));
+}
+
+
+/**
+@breif Blend between dielectric and metallic materials.
+Note: The range of semiconductors is approx. [0.2, 0.45]
+*/
+float3 BlendMaterial(float3 Kdiff, float3 Kspec, float3 Kbase, float metalA)
+{
+  float scRange = smoothstep(0.2, 0.45, metalA);
+  float3  dielectric = Kdiff + Kspec;
+  float3  metal = Kspec * Kbase;
+  return lerp(dielectric, metal, scRange);
+}
+
+
+/**
+@breif decodes RGBM value back into linear rgb
+*/
+float3 RGBMDecode ( float4 rgbm, float hdrExp, float gammaExp ) 
+{
+    float3 upackRGBhdr = (rgbm.bgr * rgbm.a) * hdrExp;
+    float3 rgbLin = pow(upackRGBhdr.rgb, gammaExp);
+    return rgbLin;
+}

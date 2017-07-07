@@ -136,8 +136,8 @@ cbuffer UpdatePerObject : register(b1)
 	float4x4	WorldViewProj		: WorldViewProjection	< string UIWidget = "None"; >;  //<-- may not need?
 
 	// these are per-object includes for this cBuffer
-	// they come from bfShader_pbr.fxh
-	// "Material Properties"
+	// they come from pbr_shader_ui.fxh
+	// "Material Properties" UI group
 	// hasAlpha
 	HOG_PROPERTY_HAS_ALPHA
 	// useCutoutAlpha:			bool
@@ -152,10 +152,16 @@ cbuffer UpdatePerObject : register(b1)
 	HOG_PROPERTY_MATERIAL_ROUGHNESS
 	// materialMetalness:		scalar 0..1
 	HOG_PROPERTY_MATERIAL_METALNESS
-	// materialBumpIntensity:	scalar 0..1 (soft)
-	HOG_PROPERTY_MATERIAL_BUMPINTENSITY
 	// materialIOR:				scalar 1..3 (soft)
 	HOG_PROPERTY_MATERIAL_IOR
+	// materialBumpIntensity:	scalar 0..1 (soft)
+	HOG_PROPERTY_MATERIAL_BUMPINTENSITY
+	// useVertexC0_RGBA:		bool
+	HOG_PROPERTY_USE_VERTEX_C0_RGBA
+	// hasVertexAlpha:			bool
+	HOG_PROPERTY_HAS_VERTEX_ALPHA
+	// useVertexC1_AO:			bool
+	HOG_PROPERTY_USE_VERTEX_C1_AO
 
 	// "Lighting Properties"
 	// materialAmbient:			sRGB
@@ -245,6 +251,8 @@ float4 MayaHwFogColor : HardwareFogColor < string UIWidget = "None"; > = { 0.5f,
 struct vsInput
 {
 	float3 m_Position		: POSITION0;
+	float4 m_AlbedoRGBA     : COLOR0;
+	float4 m_vertexAO		: COLOR1;
 	float3 m_Normal			: NORMAL;
 	float3 m_Binormal		: BINORMAL;
 	float3 m_Tangent		: TANGENT;
@@ -258,6 +266,8 @@ struct vsInput
 struct VsOutput 
 {
 	float4 m_Position		: SV_POSITION;
+	float4 m_albedoRGBA     : COLOR0;
+	float4 m_vertexAO		: COLOR1;
 	float2 m_Uv0			: TEXCOORD0;
 	float4 m_WorldPosition	: TEXCOORD1_centroid;
 	float4 m_View			: TEXCOORD2_centroid;
@@ -277,6 +287,22 @@ VsOutput vsMain(vsInput v)
 
 	// we pass vertices in world space
 	OUT.m_WorldPosition = mul(float4(v.m_Position, 1), World);
+
+	if (useVertexC0_RGBA)
+		// Interpolate and ouput vertex color 0
+		OUT.m_albedoRGBA.rgb = v.m_AlbedoRGBA.rgb;
+		OUT.m_albedoRGBA.w = v.m_AlbedoRGBA.w;
+
+		// setup Gamma Corrention
+		float gammaCexp = linearSpaceLighting ? gammaCorrectionValue : 1.0;
+
+		// convert sRGB color per-vertex to linear?
+		OUT.m_albedoRGBA.rgb = linearSpaceLighting ? pow(v.m_AlbedoRGBA.rgb, gammaCexp) : OUT.m_albedoRGBA.rgb;
+	
+	if (useVertexC1_AO)
+		// Interpolate and ouput vertex color 1
+		OUT.m_vertexAO.rgb = v.m_vertexAO.rgb;
+		OUT.m_vertexAO.w = v.m_vertexAO.w;
 
 	// Pass through texture coordinates
 	// flip Y for Maya
@@ -330,32 +356,49 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 		FrontFace = !FrontFace;
 	#endif
 
+	// texture maps and such
+	//baseColor, need to fetch it now so we can clip against albedo alpha channel
+	float4 baseColorT = baseColorMap.Sample(SamplerAnisoWrap, p.m_Uv0).rgba;
+
+	// we need to calculate and store a transperancy value to clip against
+	float transperancy = 1.0f;
+	transperancy = hasAlpha ? baseColorT.a : transperancy;
+	transperancy = hasVertexAlpha ? (transperancy * p.m_albedoRGBA.a) : transperancy;
+
+	//hasVertexAlpha || hasAlpha || useCutoutAlpha
 	if (useCutoutAlpha)
 	{
 		// clip as early as possible
+		// v1
 		//OpacityMaskClip(hasAlpha, SamplerLinearWrap, diffuseMap0, p.m_Uv0, opacityMaskBias);
-		OpacityClip(hasAlpha, opacity, opacityMaskBias);
+		// v2
+		OpacityClip(hasAlpha, transperancy, opacityMaskBias);
 	}
 
-	// texture maps and such
-	//baseColor
-	float4 baseColorT = baseColorMap.Sample(SamplerAnisoWrap, p.m_Uv0).rgba;
-	// alpha
-	//float bAlpha = 1.0f;
-	float bAlpha = baseColorT.a;
+	// setup Gamma Corrention
+	float gammaCorrectionExponent = linearSpaceLighting ? gammaCorrectionValue : 1.0;
+
+	// more texture maps and such
+	// baseColor and alpha was setup above clipping and removed from here
 	// PBR Masks, R = Metalness, G = Roughness, B = AO, = Cavity
 	float4 pbrMasks = pbrMasksMap.Sample(SamplerAnisoWrap, p.m_Uv0).rgba;
 	// Normal Map
 	float3 normalRaw = (baseNormalMap.Sample(SamplerAnisoWrap, p.m_Uv0).xyz * 2.0f) - 1.0f;
-		
-	// setup Gamma Corrention
-	float gammaCorrectionExponent = linearSpaceLighting ? gammaCorrectionValue : 1.0;
 
 	// FIX UP all color values --> Linear
 	// base color linear
 	float3 bColorLin = pow(materialBaseColor.rgb * baseColorT.rgb, gammaCorrectionExponent);
 	// Material Color
 	float3 matAmbLin = pow(materialAmbient.rgb, gammaCorrectionExponent);
+
+	// combine the linear vertex color RGB and the linear base color
+	if (useVertexC0_RGBA)
+		bColorLin.rgb *= p.m_albedoRGBA.rgb;
+
+	// set up the vertex AO
+	float3 vertAO = (1.0f, 1.0f, 1.0f);
+	if (useVertexC1_AO)
+		vertAO.rgb = p.m_vertexAO.rgb;
 
 	// Calculate the normals with intensity and derive Z
 	float3 nTS = float3(normalRaw.xy * materialBumpIntensity, sqrt(1.0 - saturate(dot(normalRaw.xy, normalRaw.xy))));
@@ -371,6 +414,7 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 		nTS.z = -nTS.z;
 
 	// Transform the normal into world space where the light data is
+	// Normalize proper normal lengths after decoding dxt normals and creating Z
 	float3 n = normalize(mul(nTS, p.m_TWMtx));
 
 	// setup lights
@@ -378,8 +422,10 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	//build4MayaLights(lights, matDiffLin, matSpecLin, gammaCorrectionExponent);
 	build4MayaLights(lights, float3(1.0f, 1.0f, 1.0f), float3(1.0f, 1.0f, 1.0f), gammaCorrectionExponent);
 
-	// We'll use Maya's SSAO this is mainly here for reference in porting the data
+	// We'll use Maya's SSAO this is mainly here for reference in porting the data to engine
 	//float ssao = ssaoTexture.Sample(ssaoSampler, p.m_Position.xy * targetDimensions.xy).x;
+	// I have no idea if there is a way to retreive the viewport AO buffer
+	// I think not, because I beleive it's applied as post processing
 	float ssao = 1.0;  // REPLACED with constant, Maya applies it's own
 
 	//set up material properties based on the pbrMasks
@@ -410,6 +456,7 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	//non-metals are 3% reflective... approximately
 	// if you were going to hard code something, this would be a good guess
 	//float3 F0 = lerp(float3(0.03, 0.03, 0.03), mColorLin, pbrMetalness);
+	// but some escoteric materials might have different rgb values for F0?
 
 	// but lets not hard code it!
 	// IOR values: http://www.pixelandpoly.com/ior.html#C
@@ -419,6 +466,8 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	F0 = F0 * F0;  // to the power of 2
 	// If we want to replace this with an F0 input texture
 	// the conversion into color space is pow(F0, 1/2.2333 ) * 255;
+	// Not a bad idea, so we can have per-pixel F0 value changes
+	// Pretty sure this is what most engines do actually
 
 	// build rounghnessA
 	//float roughA = pbrRoughness * pbrRoughness;
@@ -437,8 +486,9 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	//going to just use a constant value for shadow instead (to disregard)
 	float4 shadow = float4(1.0f, 1.0f, 1.0f, 1.0f);
 
-	// I think this is the directional sunlight?
-	// I don't think we need this in maya - just let the artist use a bound light as directional
+	// This is here for reference, the engine directional sunlight
+	// We need this in maya - just let the artist use a bound light as directional
+	// Although, we could add sun properties and expose this so we don't use up a light
 	//i = 0;
 	//float n_dot_l = saturate(dot(n, lightDirection[i].m_Direction.xyz));
 	//float diffuse_term = n_dot_l;
@@ -573,7 +623,7 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	// load
 	float4 diffEnvMap = diffuseEnvTextureCube.SampleLevel(SamplerCubeMap, n, 0.0f).rgba;
 	float3 diffEnvLin = RGBMDecode(diffEnvMap, envLightingExp, gammaCorrectionExponent).rgb;  // decode to HDR
-	diffuse.rgb += diffEnvLin * matAmbLin.rgb * bumpAO * ssao;
+	diffuse.rgb += diffEnvLin * matAmbLin.rgb;
 
 	// reflection is incoming light
 	float3 R = -reflect(p.m_View.xyz, n);
@@ -587,24 +637,24 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	float3 cSpecLin = lerp(F0.xxx, specEnvLin.rgb, materialMetalness) * brdfMap.x + brdfMap.y;
 	//float3 fcSpecLin = Specular_F_Roughness(cSpecLin, roughA2, NdotV);
 
-	specular.rgb += matAmbLin.rgb * cSpecLin * bumpAO * ssao;
+	specular.rgb += matAmbLin.rgb * cSpecLin;
 
 	// ----------------------
 	// FINAL COLOR AND ALPHA:
 	// ----------------------
 	// add the cumulative diffuse and specular
 	//o.m_Color.xyz = (diffuse.xyz * base.xyz) + (specular.xyz * base.xyz) + matEmissive.xyz;
-	o.m_Color.rgb = (diffuse.rgb * mColorLin.rgb * bumpAO) + (specular.rgb * bColorLin.rgb * pbrCavity);
-	o.m_Color.w = bAlpha;
+	o.m_Color.rgb =  (diffuse.rgb * mColorLin.rgb * bumpAO * vertAO * ssao);
+	o.m_Color.rgb += (specular.rgb * bColorLin.rgb * bumpAO * vertAO * ssao * pbrCavity);
+
+	// final alpha:
+	transperancy = opacity < 1.0f ? (transperancy * opacity) : transperancy;
+	o.m_Color.w = transperancy;
 
 	//o.m_Color.rgb = fcSpecLin.rgb;
 
 	//o.m_Color.rgb = cSpecLin;
 	//o.m_Color.rgb = ambDomeCs.rgb * matAmbLin.rgb * cSpecLin * ssao;
-
-	float transperancy = opacity;
-	transperancy = hasAlpha ? (bAlpha * opacity) : transperancy;
-	transperancy = useCutoutAlpha ? opacity : transperancy;
 
 	float3 result = o.m_Color.rgb * transperancy;
 
@@ -786,7 +836,8 @@ technique11 TessellationOFF
 <
 	bool overridesDrawState = false;	// we do not supply our own render state settings
 	int isTransparent = 3;
-	string transparencyTest = "opacity < 1.0 || hasAlpha || useCutoutAlpha";
+	// which values trigger a transparecy test
+	string transparencyTest = "opacity < 1.0 || hasAlpha || hasVertexAlpha";
 
 #ifdef _MAYA_
 	// Tells Maya that the effect supports advanced transparency algorithm,

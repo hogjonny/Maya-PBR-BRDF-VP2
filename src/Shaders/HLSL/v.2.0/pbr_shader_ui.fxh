@@ -156,16 +156,6 @@
 > = false;
 
 /**
-@brief Macro to define Has Vertex Alpha for use with opacity
-*/
-#define HOG_PROPERTY_HAS_VERTEX_ALPHA bool hasVertexAlpha				\
-<																		\
-	string UIGroup = MATERIAL_PROPERTIES;								\
-	string UIName = HOG_HAS_VERTEX_ALPHA;								\
-	int UIOrder = 152;													\
-> = false;
-
-/**
 @breif at what value do we clip away pixels
 */
 #define HOG_PROPERTY_OPACITY_MASK_BIAS float opacityMaskBias	\
@@ -307,6 +297,36 @@
 	float UIStep = 0.01;													\
 	int UIOrder = 163;														\
 > = 1.00f;
+
+/**
+@brief Macro to define switch for vertex color0, albedo RGBA
+*/
+#define HOG_PROPERTY_USE_VERTEX_C0_RGBA bool useVertexC0_RGBA				\
+<																			\
+	string UIGroup = MATERIAL_PROPERTIES;									\
+	string UIName = HOG_USE_VERTEX_C0_RGBA;									\
+	int UIOrder = 164;														\
+> = false;
+
+/**
+@brief Macro to define Has Vertex Alpha for use with opacity
+*/
+#define HOG_PROPERTY_HAS_VERTEX_ALPHA bool hasVertexAlpha				\
+<																		\
+	string UIGroup = MATERIAL_PROPERTIES;								\
+	string UIName = HOG_HAS_VERTEX_ALPHA;								\
+	int UIOrder = 165;													\
+> = false;
+
+/**
+@brief Macro to define switch for vertex color1, AO
+*/
+#define HOG_PROPERTY_USE_VERTEX_C1_AO bool useVertexC1_AO					\
+<																			\
+	string UIGroup = MATERIAL_PROPERTIES;									\
+	string UIName = HOG_USE_VERTEX_C1_AO;									\
+	int UIOrder = 166;														\
+> = false;
 
 // ---------------------------------------------
 // string UIGroup = "Lighting Properties"; UI 300+

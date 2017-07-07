@@ -17,6 +17,10 @@ If a property name needs to be modified, it would be changed here without needin
 #define HOG_MATERIAL_AMBIENT			"Ambient"
 #define HOG_MATERIAL_DIFFUSE			"Diffuse"
 
+// per-vertex color sets
+#define HOG_USE_VERTEX_C0_RGBA			"Use Vert color0, Albedo RGBA"
+#define HOG_USE_VERTEX_C1_AO			"Use Vert color1, Vertex AO"
+
 // hemispherical ambient sky
 #define HOG_SCENE_AMBSKY				"Ambient Sky Color"
 #define HOG_SCENE_AMBGRND				"Ambient Ground Color"
@@ -52,8 +56,8 @@ If a property name needs to be modified, it would be changed here without needin
 #define HOG_IS_SHADOW_CASTER			"Is Shadow Caster"
 #define HOG_IS_SHADOW_RECEIVER			"Is Shadow Receiver"
 
-#define HOG_HAS_VERTEX_ALPHA			"Has Vertex Alpha"
-#define HOG_HAS_ALPHA					"Has Diffuse Map Alpha"
+#define HOG_HAS_VERTEX_ALPHA			"Use Vert color0 Alpha"
+#define HOG_HAS_ALPHA					"Has Albedo Map Alpha"
 #define HOG_USE_CUTOUT_ALPHA			"Use Cutout Alpha"
 #define HOG_OPACITY						"Opacity [*]"
 #define HOG_OPACITY_BIAS				"Cutout Bias [*]"

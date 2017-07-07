@@ -74,7 +74,6 @@ DerivedDataCache/*
 
 # my own
 *.log
-*.tga
 *.tlog
 *.1.tlog
 ShaderDevProj/TestProject/Debug/ShaderDevProject.tlog/link.write.1.tlog

@@ -13,25 +13,39 @@ FBX material property names may be referenced as preprocessor macros in order to
 If a property name needs to be modified, it would be changed here without needing to modify the loading code or Maya shaders directly.
 */
 
+// UI Groups
+#define HOG_GRP_MATERIAL_MAPS			"Material Maps"
+#define HOG_GRP_ENV_LIGHTING			"Enrironment Lighting"	
+#define HOG_GRP_MAT_PROPS				"Material Properties"
+#define HOG_GRP_LIGHT_PROPS				"Lighting Properties"
+#define HOG_GRP_SHADOW_PROPS			"Shadow Properties"
+#define HOG_GRP_ADV_PROPS				"Advanced Properties"
+#define HOG_GRP_ENGN_PREV				"Engine | Scene Preview"
+
 // colors
-#define HOG_MATERIAL_AMBIENT			"Ambient"
-#define HOG_MATERIAL_DIFFUSE			"Diffuse"
+#define HOG_MATERIAL_AMBIENT			"Surface Ambient"
+#define HOG_MATERIAL_DIFFUSE			"Surface Diffuse"
 
 // per-vertex color sets
 #define HOG_USE_VERTEX_C0_RGBA			"Use Vert color0, Albedo RGBA"
 #define HOG_USE_VERTEX_C1_AO			"Use Vert color1, Vertex AO"
+
+// environment maps
+#define HOG_SCENE_USE_ENV				"Use Environment Maps"
+#define HOG_SCENE_ENV_TYPE				"Env Map Type"
+#define HOG_SCENE_BRDF					"BRDF Map [2D]"
+#define HOG_SCENE_CUBE_IBLDIFF			"Diffuse IBL [cube]"
+#define HOG_SCENE_CUBE_IBLSPEC			"Specualar IBL [cube]"
+#define HOG_SCENE_LATLONG_IBLDIFF		"Diffuse IBL [Latlong]"
+#define HOG_SCENE_LATLONG_IBLSPEC		"Specualar IBL [Latlong]"
+#define	HOG_SCENE_IBLEXP				"Env IBL Exponent"
 
 // hemispherical ambient sky
 #define HOG_SCENE_AMBSKY				"Ambient Sky Color"
 #define HOG_SCENE_AMBGRND				"Ambient Ground Color"
 #define HOG_SCENE_AMBSKYINT				"Ambient Sky Intensity"
 #define HOG_SCENE_AMBGRNDINT			"Ambient Ground Intensity"
-
-// environment maps
-#define HOG_SCENE_BRDF					"BRDF Map [2D]"
-#define HOG_SCENE_IBLDIFF				"Diffuse IBL [cube]"
-#define HOG_SCENE_IBLSPEC				"Specualar IBL [cube]"
-#define	HOG_SCENE_IBLEXP				"Env IBL Exponent"
+#define HOG_SCENE_AMBHEMIMODE			"Hemispherical Ambient"
 
 // PBR Material Color Names
 #define HOG_MATERIAL_BASECOLOR			"Base Color"

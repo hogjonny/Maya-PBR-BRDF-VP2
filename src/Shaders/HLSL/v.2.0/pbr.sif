@@ -498,6 +498,7 @@ float bigD_DiffuseBRDF(float metalA, float roughA, float NdotL, float NdotV, flo
 @param[in] NdotL
 @param[in] NdotV
 @param[in] LdotH
+@note: I think this is the one we are using for diffuse currently
 */
 float bigD_DiffuseBRDF(float roughA, float NdotL, float NdotV, float LdotH)
 {

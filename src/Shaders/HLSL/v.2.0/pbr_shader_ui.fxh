@@ -16,15 +16,14 @@
 // ---------------------------------------------
 // string UIGroup = "Material Maps"; UI 100+
 // ---------------------------------------------
-
-#define MATERIAL_MAPS "Material Maps"
+// #define HOG_GRP_MATERIAL_MAPS "Material Maps"
 
 /**
 @brief baseColor input for diffuse/albedo color shading calculations
 */
 #define HOG_MAP_BASECOLOR Texture2D baseColorMap			\
 <															\
-	string UIGroup = MATERIAL_MAPS;							\
+	string UIGroup = HOG_GRP_MATERIAL_MAPS;					\
 	string ResourceName = "";								\
 	string UIWidget = "FilePicker";							\
 	string UIName = HOG_BASECOLOR_MAP;						\
@@ -39,7 +38,7 @@
 */
 #define HOG_MAP_BASENORMAL Texture2D baseNormalMap			\
 <															\
-	string UIGroup = MATERIAL_MAPS;							\
+	string UIGroup = HOG_GRP_MATERIAL_MAPS;					\
 	string ResourceName = "";								\
 	string UIWidget = "FilePicker";							\
 	string UIName = HOG_NORMAL_MAP;							\
@@ -65,7 +64,7 @@
 */
 #define HOG_MAP_PBRMASKS Texture2D pbrMasksMap				\
 <															\
-	string UIGroup = MATERIAL_MAPS;							\
+	string UIGroup = HOG_GRP_MATERIAL_MAPS;					\
 	string ResourceName = "";								\
 	string UIWidget = "FilePicker";							\
 	string UIName = HOG_PBRMASKSMAP_MAP;					\
@@ -81,66 +80,159 @@
 // ---------------------------------------------
 // string UIGroup = "Enrironment Maps"; UI 125+
 // ---------------------------------------------
+//#define HOG_GRP_ENV_LIGHTING "Enrironment Lighting"	
 
-#define Environment_MAPS "Enrironment Maps"	
+#define HOG_ENV_BOOL bool useEnvMaps											\
+<																				\
+	string UIGroup = HOG_GRP_ENV_LIGHTING;										\
+	string UIName = HOG_SCENE_USE_ENV;											\
+	int UIOrder = 125;															\
+> = true;
+
+#define HOG_ENVMAP_TYPE int envMapType											\
+<																				\
+	string UIGroup = HOG_GRP_ENV_LIGHTING;										\
+	string UIWidget = "Slider";													\
+	string UIFieldNames = "cubemap:LatLong[2D]";								\
+	string UIName = HOG_SCENE_ENV_TYPE;											\
+	int UIOrder = 126;															\
+> = 0;
 
 #define HOG_MAP_BRDF Texture2D brdfTextureMap									\
 <																				\
-    string UIGroup = Environment_MAPS;											\
+    string UIGroup = HOG_GRP_ENV_LIGHTING;										\
     string ResourceName = "";													\
     string UIWidget = "FilePicker";												\
     string UIName = HOG_SCENE_BRDF;												\
     string ResourceType = "2D";													\
     int mipmaplevels = 0;														\
-    int UIOrder = 125;															\
+    int UIOrder = 127;															\
 >;
 
 #define HOG_CUBEMAP_IBLDIFF TextureCube diffuseEnvTextureCube : environment		\
 <																				\
-    string UIGroup = Environment_MAPS;											\
+    string UIGroup = HOG_GRP_ENV_LIGHTING;										\
     string ResourceName = "";													\
     string UIWidget = "FilePicker";												\
-    string UIName = HOG_SCENE_IBLDIFF;											\
+    string UIName = HOG_SCENE_CUBE_IBLDIFF;										\
     string ResourceType = "Cube";												\
     int mipmaplevels = 0;														\
-    int UIOrder = 126;															\
+    int UIOrder = 128;															\
 >;
 
 #define HOG_CUBEMAP_IBLSPEC TextureCube specularEnvTextureCube : environment	\
 <																				\
-    string UIGroup = Environment_MAPS;											\
+    string UIGroup = HOG_GRP_ENV_LIGHTING;										\
     string ResourceName = "";													\
     string UIWidget = "FilePicker";												\
-    string UIName = HOG_SCENE_IBLSPEC;											\
+    string UIName = HOG_SCENE_CUBE_IBLSPEC;										\
     string ResourceType = "Cube";												\
     int mipmaplevels = 0;														\
-    int UIOrder = 127;															\
+    int UIOrder = 129;															\
+>;
+
+#define HOG_LATLONG_IBLDIFF Texture2D diffuseEnvTextureLatlong : environment	\
+<																				\
+    string UIGroup = HOG_GRP_ENV_LIGHTING;										\
+    string ResourceName = "";													\
+    string UIWidget = "FilePicker";												\
+    string UIName = HOG_SCENE_LATLONG_IBLDIFF;									\
+    string ResourceType = "Cube";												\
+    int mipmaplevels = 0;														\
+    int UIOrder = 130;															\
+>;
+
+#define HOG_LATLONG_IBLSPEC Texture2D specularEnvTextureLatlong : environment	\
+<																				\
+    string UIGroup = HOG_GRP_ENV_LIGHTING;										\
+    string ResourceName = "";													\
+    string UIWidget = "FilePicker";												\
+    string UIName = HOG_SCENE_LATLONG_IBLSPEC;									\
+    string ResourceType = "Cube";												\
+    int mipmaplevels = 0;														\
+    int UIOrder = 131;															\
 >;
 
 #define HOG_ENVLIGHTING_EXP float envLightingExp	\
 <													\
-    string UIGroup = Environment_MAPS;				\
+    string UIGroup = HOG_GRP_ENV_LIGHTING;			\
     string UIWidget = "Slider";						\
     float UIMin = 0.001;							\
     float UISoftMax = 100.000;						\
     float UIStep = 0.001;							\
     string UIName = HOG_SCENE_IBLEXP;				\
-    int UIOrder = 128;								\
+    int UIOrder = 132;								\
 > = {5.0f};
 
+/**
+@brief faux scene based global ambient (color value)
+*/
+#define HOG_PROPERTY_SCENE_AMBIENTLIGHT float3 sceneAmbientLight			\
+<																			\
+	string UIGroup = HOG_GRP_ENV_LIGHTING;									\
+	string UIName = HOG_SCENE_AMBIENT_LIGHT;								\
+	string UIWidget = "ColorPicker";										\
+	int UIOrder = 133;														\
+> = { 0.1f, 0.1f, 0.1f};
+
+#define HOG_PROPERTY_SCENE_AMBHEMIMODE int hemisphericalAmbientyMode		\
+<																			\
+	string UIGroup = HOG_GRP_ENV_LIGHTING;									\
+	string UIWidget = "Slider";												\
+	string UIFieldNames = "NONE:ADD:MULTIPLY";								\
+	string UIName = HOG_SCENE_AMBHEMIMODE;									\
+	int UIOrder = 134;														\
+> = 0;		
+
+#define HOG_PROPERTY_SCENE_AMBIENTSKY float3 ambientSkyColor : Ambient		\
+<																			\
+	string UIGroup = HOG_GRP_ENV_LIGHTING;									\
+	string UIName = HOG_SCENE_AMBSKY;										\
+	string UIWidget = "ColorPicker";										\
+	int UIOrder = 135;														\
+> = {0.0f, 1.0f, 1.0f };
+
+#define HOG_PROPERTY_SCENE_AMBIENTGRND float3 ambientGroundColor : Ambient	\
+<																			\
+	string UIGroup = HOG_GRP_ENV_LIGHTING;									\
+	string UIName = HOG_SCENE_AMBGRND;										\
+	string UIWidget = "ColorPicker";										\
+	int UIOrder = 136;														\
+> = {0.087f, 0.064f, 0.032f };
+
+#define HOG_PROPERTY_SCENE_AMBSKYINT float ambientSkyIntensity				\
+<																			\
+	string UIGroup = HOG_GRP_ENV_LIGHTING;									\
+	string UIName = HOG_SCENE_AMBSKYINT;									\
+	string UIWidget = "Slider";												\
+	float UIMin = 0.000;													\
+	float UISoftMax = 5.000;												\
+	float UIStep = 0.001;													\
+	int UIOrder = 137;														\
+> = {0.500f};
+
+#define HOG_PROPERTY_SCENE_AMBGRNDINT float ambientGrndIntensity			\
+<																			\
+	string UIGroup = HOG_GRP_ENV_LIGHTING;									\
+	string UIName = HOG_SCENE_AMBGRNDINT;									\
+	string UIWidget = "Slider";												\
+	float UIMin = 0.000;													\
+	float UISoftMax = 5.000;												\
+	float UIStep = 0.001;													\
+	int UIOrder = 138;														\
+> = {0.100f};
 
 // ---------------------------------------------
 // string UIGroup = "Material Properties"; UI 150+
 // ---------------------------------------------
-
-#define MATERIAL_PROPERTIES "Material Properties"
+//#define HOG_GRP_MAT_PROPS "Material Properties"
 
 /**
 @brief Macro to define Has Alpha for use with opacity
 */
 #define HOG_PROPERTY_HAS_ALPHA bool hasAlpha							\
 <																		\
-	string UIGroup = MATERIAL_PROPERTIES;								\
+	string UIGroup = HOG_GRP_MAT_PROPS;									\
 	string UIName = HOG_HAS_ALPHA;										\
 	int UIOrder = 150;													\
 > = false;
@@ -150,7 +242,7 @@
 */
 #define HOG_PROPERTY_CUTOUT_ALPHA bool useCutoutAlpha					\
 <																		\
-	string UIGroup = MATERIAL_PROPERTIES;								\
+	string UIGroup = HOG_GRP_MAT_PROPS;									\
 	string UIName = HOG_USE_CUTOUT_ALPHA;								\
 	int UIOrder = 151;													\
 > = false;
@@ -160,7 +252,7 @@
 */
 #define HOG_PROPERTY_OPACITY_MASK_BIAS float opacityMaskBias	\
 <																\
-	string UIGroup = MATERIAL_PROPERTIES;						\
+	string UIGroup = HOG_GRP_MAT_PROPS;							\
 	string UIName = HOG_OPACITY_BIAS;							\
 	string UIWidget = "Slider";									\
 	float UIMin = 0.0;											\
@@ -172,7 +264,7 @@
 // maya needs an opacity semantic ... this might not be the correct way to handle this but it works for now
 #define HOG_PROPERTY_OPACITY float opacity : OPACITY			\
 <																\
-	string UIGroup = MATERIAL_PROPERTIES;						\
+	string UIGroup = HOG_GRP_MAT_PROPS;							\
 	string UIWidget = "Slider";									\
 	float UIMin = 0.0;											\
 	float UIMax = 1.0;											\
@@ -186,7 +278,7 @@
 */
 #define HOG_PROPERTY_MATERIAL_BASECOLOR float3 materialBaseColor		\
 <																		\
-	string UIGroup = MATERIAL_PROPERTIES;								\
+	string UIGroup = HOG_GRP_MAT_PROPS;									\
 	string UIName = HOG_MATERIAL_BASECOLOR;								\
 	string UIWidget = "ColorPicker";									\
 	int UIOrder = 155;													\
@@ -197,7 +289,7 @@
 */
 #define HOG_PROPERTY_MATERIAL_DIFFUSE float3 materialDiffuse			\
 <																		\
-	string UIGroup = MATERIAL_PROPERTIES;								\
+	string UIGroup = HOG_GRP_MAT_PROPS;									\
 	string UIName = HOG_MATERIAL_DIFFUSE;								\
 	string UIWidget = "ColorPicker";									\
 	int UIOrder = 156;													\
@@ -208,7 +300,7 @@
 */
 #define HOG_PROPERTY_MATERIAL_ROUGHNESS float materialRoughness			\
 <																		\
-	string UIGroup = MATERIAL_PROPERTIES;								\
+	string UIGroup = HOG_GRP_MAT_PROPS;									\
 	string UIName = HOG_MATERIAL_ROUGHNESS;								\
 	string UIWidget = "Slider";											\
 	float UIMin = 0.00001;												\
@@ -222,7 +314,7 @@
 */
 #define HOG_PROPERTY_MATERIAL_METALNESS float materialMetalness			\
 <																		\
-	string UIGroup = MATERIAL_PROPERTIES;								\
+	string UIGroup = HOG_GRP_MAT_PROPS;									\
 	string UIName = HOG_MATERIAL_METALNESS;								\
 	string UIWidget = "Slider";											\
 	float UIMin = 0.00;													\
@@ -236,7 +328,7 @@
 */
 #define HOG_PROPERTY_MATERIAL_EMISSIVE	float3 materialEmissive			\
 <																		\
-	string UIGroup = MATERIAL_PROPERTIES;								\
+	string UIGroup = HOG_GRP_MAT_PROPS;									\
 	string UIName = HOG_MATERIAL_EMISSIVE;								\
 	string UIWidget = "ColorPicker";									\
 	int UIOrder = 159;													\
@@ -247,7 +339,7 @@
 */
 #define HOG_PROPERTY_MATERIAL_EMISSIVEINT float materialEmissiveIntensity	\
 <																			\
-	string UIGroup = MATERIAL_PROPERTIES;									\
+	string UIGroup = HOG_GRP_MAT_PROPS;										\
 	string UIName = HOG_MATERIAL_EMISSIVEINT;								\
 	string UIWidget = "Slider";												\
 	float UIMin = 0.00;														\
@@ -261,7 +353,7 @@
 */
 #define HOG_PROPERTY_MATERIAL_SPECTINT	float materialSpecTint			\
 <																		\
-	string UIGroup = MATERIAL_PROPERTIES;								\
+	string UIGroup = HOG_GRP_MAT_PROPS;									\
 	string UIName = HOG_MATERIAL_SPECTINT;								\
 	string UIWidget = "Slider";											\
 	float UIMin = 0.0;													\
@@ -275,7 +367,7 @@
 */
 #define HOG_PROPERTY_MATERIAL_IOR	float materialIOR					\
 <																		\
-	string UIGroup = MATERIAL_PROPERTIES;								\
+	string UIGroup = HOG_GRP_MAT_PROPS;									\
 	string UIName = HOG_MATERIAL_IOR;									\
 	string UIWidget = "Slider";											\
 	float UISoftMin = 1.0;												\
@@ -289,7 +381,7 @@
 */
 #define HOG_PROPERTY_MATERIAL_BUMPINTENSITY float materialBumpIntensity		\
 <																			\
-	string UIGroup = MATERIAL_PROPERTIES;									\
+	string UIGroup = HOG_GRP_MAT_PROPS;										\
 	string UIName = HOG_MATERIAL_BUMPINTENSITY;								\
 	string UIWidget = "Slider";												\
 	float UISoftMin = 0.020;												\
@@ -303,7 +395,7 @@
 */
 #define HOG_PROPERTY_USE_VERTEX_C0_RGBA bool useVertexC0_RGBA				\
 <																			\
-	string UIGroup = MATERIAL_PROPERTIES;									\
+	string UIGroup = HOG_GRP_MAT_PROPS;										\
 	string UIName = HOG_USE_VERTEX_C0_RGBA;									\
 	int UIOrder = 164;														\
 > = false;
@@ -313,7 +405,7 @@
 */
 #define HOG_PROPERTY_HAS_VERTEX_ALPHA bool hasVertexAlpha				\
 <																		\
-	string UIGroup = MATERIAL_PROPERTIES;								\
+	string UIGroup = HOG_GRP_MAT_PROPS;									\
 	string UIName = HOG_HAS_VERTEX_ALPHA;								\
 	int UIOrder = 165;													\
 > = false;
@@ -323,7 +415,7 @@
 */
 #define HOG_PROPERTY_USE_VERTEX_C1_AO bool useVertexC1_AO					\
 <																			\
-	string UIGroup = MATERIAL_PROPERTIES;									\
+	string UIGroup = HOG_GRP_MAT_PROPS;										\
 	string UIName = HOG_USE_VERTEX_C1_AO;									\
 	int UIOrder = 166;														\
 > = false;
@@ -331,15 +423,14 @@
 // ---------------------------------------------
 // string UIGroup = "Lighting Properties"; UI 300+
 // ---------------------------------------------
-
-#define LIGHTING_PROPERTIES "Lighting Properties"
+//#define HOG_GRP_LIGHT_PROPS "Lighting Properties"
 
 /**
 @brief Marco to define ambient reflective material property
 */
 #define HOG_PROPERTY_MATERIAL_AMBIENT float3 materialAmbient			\
 <																		\
-	string UIGroup = LIGHTING_PROPERTIES;								\
+	string UIGroup = HOG_GRP_LIGHT_PROPS;								\
 	string UIName = HOG_MATERIAL_AMBIENT;								\
 	string UIWidget = "ColorPicker";									\
 	int UIOrder = 300;													\
@@ -350,7 +441,7 @@
 */
 #define HOG_PROPERTY_LINEAR_SPACE_LIGHTING bool linearSpaceLighting		\
 <																		\
-string UIGroup = LIGHTING_PROPERTIES;									\
+string UIGroup = HOG_GRP_LIGHT_PROPS;									\
 string UIName = HOG_LINEAR_SPACE_LIGHTING;								\
 int UIOrder = 301;														\
 > = true;
@@ -360,7 +451,7 @@ int UIOrder = 301;														\
 */
 #define HOG_PROPERTY_LINEAR_VERTEX_COLOR bool linearVertexColor			\
 <																		\
-string UIGroup = LIGHTING_PROPERTIES;									\
+string UIGroup = HOG_GRP_LIGHT_PROPS;									\
 string UIName = HOG_LINEAR_VERTEX_COLORS;								\
 int UIOrder = 302;														\
 > = false;																	
@@ -370,7 +461,7 @@ int UIOrder = 302;														\
 */
 #define HOG_PROPERTY_FLIP_BACKFACE_NORMALS bool flipBackfaceNormals		\
 <																		\
-string UIGroup = LIGHTING_PROPERTIES;									\
+string UIGroup = HOG_GRP_LIGHT_PROPS;									\
 string UIName = HOG_FLIP_BACKFACE_NORMALS;								\
 int UIOrder = 303;														\
 > = true;																
@@ -378,15 +469,14 @@ int UIOrder = 303;														\
 // ---------------------------------------------
 // string UIgroup = "Shadow"; UI 400+
 // ---------------------------------------------
-
-#define SHADOW_GROUP "Shadows"
+//#define HOG_GRP_SHADOW_PROPS "Shadow Properties"
 
 /**
 @brief Macro to define 
 */
 #define HOG_PROPERTY_IS_SHADOW_CASTER bool isShadowCaster				\
 <																		\
-	string UIGroup = "Shadow";											\
+	string UIGroup = HOG_GRP_SHADOW_PROPS;								\
 	string UIName = HOG_IS_SHADOW_CASTER;								\
 	int UIOrder = 400;													\
 > = true;
@@ -396,7 +486,7 @@ int UIOrder = 303;														\
 */
 #define HOG_PROPERTY_IS_SHADOW_RECEIVER bool isShadowReceiver			\
 <																		\
-	string UIGroup = "Shadow";											\
+	string UIGroup = HOG_GRP_SHADOW_PROPS;								\
 	string UIName = HOG_IS_SHADOW_RECEIVER;								\
 	int UIOrder = 401;													\
 > = true;
@@ -406,7 +496,7 @@ int UIOrder = 303;														\
 */
 #define HOG_PROPERTY_SHADOW_RANGE_AUTO	bool shadowRangeAuto			\
 <																		\
-	string UIGroup = "Shadow";											\
+	string UIGroup = HOG_GRP_SHADOW_PROPS;								\
 	string UIName = HOG_SHADOW_RANGE_AUTO;								\
 	int UIOrder = 402;													\
 > = true;
@@ -416,7 +506,7 @@ int UIOrder = 303;														\
 */
 #define HOG_PROPERTY_SHADOW_RANGE_MAX float shadowRangeMax				\
 <																		\
-	string UIGroup = "Shadow";											\
+	string UIGroup = HOG_GRP_SHADOW_PROPS;								\
 	string UIName = HOG_SHADOW_RANGE_MAX;								\
 	string UIWidget = "Slider";											\
 	float UIMin = 0.0;													\
@@ -431,13 +521,13 @@ This tends to get affected by scene scale and polygon count of the objects invol
 */
 #define HOG_PROPERTY_SHADOW_DEPTH_BIAS float shadowDepthBias : ShadowMapBias	\
 <																				\
-string UIGroup = SHADOW_GROUP;													\
-string UIName = HOG_SHADOW_DEPTH_BIAS;											\
-string UIWidget = "Slider";														\
-float UIMin = 0.000;															\
-float UISoftMax = 10.000;														\
-float UIStep = 0.001;															\
-int UIOrder = 405;																\
+	string UIGroup = HOG_GRP_SHADOW_PROPS;										\
+	string UIName = HOG_SHADOW_DEPTH_BIAS;										\
+	string UIWidget = "Slider";													\
+	float UIMin = 0.000;														\
+	float UISoftMax = 10.000;													\
+	float UIStep = 0.001;														\
+	int UIOrder = 405;															\
 > = {0.01f};																	
 
 /**
@@ -445,13 +535,13 @@ int UIOrder = 405;																\
 */
 #define HOG_PROPERTY_SHADOW_MULTIPLIER float shadowMultiplier	\
 <																\
-string UIGroup = SHADOW_GROUP;									\
-string UIName = HOG_SHADOW_MULTIPLIER;							\
-string UIWidget = "Slider";										\
-float UIMin = 0.000;											\
-float UIMax = 1.000;											\
-float UIStep = 0.001;											\
-int UIOrder = 406;												\
+	string UIGroup = HOG_GRP_SHADOW_PROPS;						\
+	string UIName = HOG_SHADOW_MULTIPLIER;						\
+	string UIWidget = "Slider";									\
+	float UIMin = 0.000;										\
+	float UIMax = 1.000;										\
+	float UIStep = 0.001;										\
+	int UIOrder = 406;											\
 > = { 1.0f };													
 
 /**
@@ -459,28 +549,28 @@ int UIOrder = 406;												\
 */
 #define HOG_PROPERTY_SHADOW_USE_SHADOWS bool useShadows		\
 <															\
-string UIGroup = SHADOW_GROUP;								\
-string UIName = HOG_SHADOW_USE_SHADOWS;						\
-int UIOrder = 407;											\
+	string UIGroup = HOG_GRP_SHADOW_PROPS;					\
+	string UIName = HOG_SHADOW_USE_SHADOWS;					\
+	int UIOrder = 407;										\
 > = false;													
 
 // ---------------------------------------------
-// string UIGroup = "Advanced"; UI 500+
+// string UIGroup = "HOG_GRP_ADV_PROPS"; UI 500+
 // ---------------------------------------------
-#define ADVANCED "Advanced"
+//#define HOG_GRP_ADV_PROPS "HOG_GRP_ADV_PROPS Properties"
 
 /**
 @brief Macro to define 
 */
 #define HOG_PROPERTY_VERTEX_ELEMENT_POSITION int vertexElementPosition	\
 <																		\
-string UIGroup = ADVANCED;												\
-string UIFieldNames = "Auto:16:32:";									\
-string UIName = HOG_VERTEX_ELEMENT_POSITION;							\
-float UIMin = 0;														\
-float UIMax = 2;														\
-float UIStep = 1;														\
-int UIOrder = 500;														\
+	string UIGroup = HOG_GRP_ADV_PROPS;									\
+	string UIFieldNames = "Auto:16:32:";								\
+	string UIName = HOG_VERTEX_ELEMENT_POSITION;						\
+	float UIMin = 0;													\
+	float UIMax = 2;													\
+	float UIStep = 1;													\
+	int UIOrder = 500;													\
 > = 0;
 
 /**
@@ -488,13 +578,13 @@ int UIOrder = 500;														\
 */
 #define HOG_PROPERTY_VERTEX_ELEMENT_COLOR int vertexElementColor	\
 <																	\
-string UIGroup = ADVANCED;											\
-string UIFieldNames = "Auto:16:32:";								\
-string UIName = HOG_VERTEX_ELEMENT_COLOR;							\
-float UIMin = 0;													\
-float UIMax = 2;													\
-float UIStep = 1;													\
-int UIOrder = 501;													\
+	string UIGroup = HOG_GRP_ADV_PROPS;								\
+	string UIFieldNames = "Auto:16:32:";							\
+	string UIName = HOG_VERTEX_ELEMENT_COLOR;						\
+	float UIMin = 0;												\
+	float UIMax = 2;												\
+	float UIStep = 1;												\
+	int UIOrder = 501;												\
 > = 0;
 
 /**
@@ -502,13 +592,13 @@ int UIOrder = 501;													\
 */
 #define HOG_PROPERTY_VERTEX_ELEMENT_UV int vertexElementUV	\
 <															\
-string UIGroup = ADVANCED;									\
-string UIFieldNames = "Auto:16:32:";						\
-string UIName = HOG_VERTEX_ELEMENT_UV;						\
-float UIMin = 0;											\
-float UIMax = 2;											\
-float UIStep = 1;											\
-int UIOrder = 502;											\
+	string UIGroup = HOG_GRP_ADV_PROPS;						\
+	string UIFieldNames = "Auto:16:32:";					\
+	string UIName = HOG_VERTEX_ELEMENT_UV;					\
+	float UIMin = 0;										\
+	float UIMax = 2;										\
+	float UIStep = 1;										\
+	int UIOrder = 502;										\
 > = 0;
 
 /**
@@ -516,13 +606,13 @@ int UIOrder = 502;											\
 */
 #define HOG_PROPERTY_VERTEX_ELEMENT_NORMAL int vertexElementNormal		\
 <																		\
-string UIGroup = ADVANCED;												\
-string UIFieldNames = "Auto:16:32:";									\
-string UIName = HOG_VERTEX_ELEMENT_NORMAL;								\
-float UIMin = 0;														\
-float UIMax = 2;														\
-float UIStep = 1;														\
-int UIOrder = 503;														\
+	string UIGroup = HOG_GRP_ADV_PROPS;									\
+	string UIFieldNames = "Auto:16:32:";								\
+	string UIName = HOG_VERTEX_ELEMENT_NORMAL;							\
+	float UIMin = 0;													\
+	float UIMax = 2;													\
+	float UIStep = 1;													\
+	int UIOrder = 503;													\
 > = 0;									
 
 /**
@@ -530,13 +620,13 @@ int UIOrder = 503;														\
 */
 #define HOG_PROPERTY_VERTEX_ELEMENT_BINORMAL int vertexElementBinormal		\
 <																			\
-string UIGroup = ADVANCED;													\
-string UIFieldNames = "Auto:16:32:";										\
-string UIName = HOG_VERTEX_ELEMENT_BINORMAL;								\
-float UIMin = 0;															\
-float UIMax = 2;															\
-float UIStep = 1;															\
-int UIOrder = 504;															\
+	string UIGroup = HOG_GRP_ADV_PROPS;										\
+	string UIFieldNames = "Auto:16:32:";									\
+	string UIName = HOG_VERTEX_ELEMENT_BINORMAL;							\
+	float UIMin = 0;														\
+	float UIMax = 2;														\
+	float UIStep = 1;														\
+	int UIOrder = 504;														\
 > = 0;
 
 /**
@@ -544,76 +634,26 @@ int UIOrder = 504;															\
 */
 #define HOG_PROPERTY_VERTEX_ELEMENT_TANGENT int vertexElementTangent	\
 <																		\
-string UIGroup = ADVANCED;												\
-string UIFieldNames = "Auto:16:32:";									\
-string UIName = HOG_VERTEX_ELEMENT_TANGENT;								\
-float UIMin = 0;														\
-float UIMax = 2;														\
-float UIStep = 1;														\
-int UIOrder = 505;														\
+	string UIGroup = HOG_GRP_ADV_PROPS;									\
+	string UIFieldNames = "Auto:16:32:";								\
+	string UIName = HOG_VERTEX_ELEMENT_TANGENT;							\
+	float UIMin = 0;													\
+	float UIMax = 2;													\
+	float UIStep = 1;													\
+	int UIOrder = 505;													\
 > = 0;	
 
 // ---------------------------------------------
 // string UIGroup = "Engine | Scene Preview"; UI 600+
 // ---------------------------------------------
-#define ENGINE_PREVIEW "Engine | Scene Preview"
-
-/**
-@brief faux scene based global ambient (color value)
-*/
-#define HOG_PROPERTY_SCENE_AMBIENTLIGHT float3 sceneAmbientLight		\
-<																		\
-	string UIGroup = ENGINE_PREVIEW;									\
-	string UIName = HOG_SCENE_AMBIENT_LIGHT;							\
-	string UIWidget = "ColorPicker";									\
-	int UIOrder = 600;													\
-> = { 0.1f, 0.1f, 0.1f};		
-
-#define HOG_PROPERTY_SCENE_AMBIENTSKY float3 ambientSkyColor : Ambient	\
-<																		\
-	string UIGroup = ENGINE_PREVIEW;									\
-	string UIName = HOG_SCENE_AMBSKY;									\
-	string UIWidget = "ColorPicker";									\
-	int UIOrder = 601;													\
-> = {0.0f, 1.0f, 1.0f };
-
-#define HOG_PROPERTY_SCENE_AMBIENTGRND float3 AmbientGroundColor : Ambient	\
-<																			\
-	string UIGroup = ENGINE_PREVIEW;										\
-	string UIName = HOG_SCENE_AMBGRND;										\
-	string UIWidget = "ColorPicker";										\
-	int UIOrder = 602;														\
-> = {0.087f, 0.064f, 0.032f };
-
-#define HOG_PROPERTY_SCENE_AMBSKYINT float AmbientSkyIntensity				\
-<																			\
-	string UIGroup = ENGINE_PREVIEW;										\
-	string UIName = HOG_SCENE_AMBSKYINT;									\
-	string UIWidget = "Slider";												\
-	float UIMin = 0.000;													\
-	float UISoftMax = 5.000;												\
-	float UIStep = 0.001;													\
-	int UIOrder = 603;														\
-> = {0.500f};
-
-#define HOG_PROPERTY_SCENE_AMBGRNDINT float AmbientGrndIntensity			\
-<																			\
-	string UIGroup = ENGINE_PREVIEW;										\
-	string UIName = HOG_SCENE_AMBGRNDINT;									\
-	string UIWidget = "Slider";												\
-	float UIMin = 0.000;													\
-	float UISoftMax = 5.000;												\
-	float UIStep = 0.001;													\
-	int UIOrder = 604;														\
-> = {0.100f};
-									
+//#define HOG_GRP_ENGN_PREV "Engine | Scene Preview"
 
 /**
 @brief the gamma correct expoenent
 */
 #define HOG_PROPERTY_GAMMA_CORRECTION_VALUE float gammaCorrectionValue	\
 <																		\
-	string UIGroup = ENGINE_PREVIEW;									\
+	string UIGroup = HOG_GRP_ENGN_PREV;									\
 	int UIOrder = 605;													\
 > = 2.233333333f;														
 
@@ -622,7 +662,7 @@ int UIOrder = 505;														\
 */
 #define HOG_PROPERTY_BLOOM_EXP float bloomExp							\
 <																		\
-	string UIGroup = ENGINE_PREVIEW;									\
+	string UIGroup = HOG_GRP_ENGN_PREV;									\
 	string UIName = HOG_GAMMA_BLOOM_EXP;								\
 	string UIWidget = "Slider";											\
 	float UIMin = 0.0;													\
@@ -634,9 +674,9 @@ int UIOrder = 505;														\
 /**
 @brief Use the lights color value as the light/material specular color value
 */
-#define HOG_PROPERTY_USE_LIGHT_COLOR_AS_LIGHT_SPECULAR_COLOR bool useLightColorAsLightSpecularColor	\
+#define HOG_PROPERTY_USE_LIGHT_COLOR_AS_LIGHT_SPECULAR_COLOR bool useLightColorAsLightSpecularColor		\
 <																										\
-string UIGroup = ENGINE_PREVIEW;																		\
+string UIGroup = HOG_GRP_ENGN_PREV;																		\
 string UIName = HOG_USE_LIGHT_COLOR_AS_LIGHT_SPECULAR_COLOR;											\
 int UIOrder = 607;																						\
 > = true;																								
@@ -648,7 +688,7 @@ int UIOrder = 607;																						\
 */
 #define HOG_PROPERTY_USE_APPROX_TONE_MAPPING bool useApproxToneMapping					\
 <																						\
-string UIGroup = ENGINE_PREVIEW;														\
+string UIGroup = HOG_GRP_ENGN_PREV;														\
 string UIName = HOG_USE_APPROX_TONE_MAPPING;											\
 int UIOrder = 608;																		\
 > = false;	
@@ -658,7 +698,7 @@ int UIOrder = 608;																		\
 */
 #define HOG_PROPERTY_GAMMA_CORRECT_SHADER bool useGammaCorrectShader	\
 <																		\
-string UIGroup = ENGINE_PREVIEW;										\
+string UIGroup = HOG_GRP_ENGN_PREV;										\
 string UIName = HOG_GAMMA_CORRECT_SHADER;								\
 int UIOrder = 609;														\
 > = true;	

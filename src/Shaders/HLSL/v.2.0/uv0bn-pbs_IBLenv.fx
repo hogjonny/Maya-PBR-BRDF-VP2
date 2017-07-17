@@ -72,17 +72,17 @@ SAMPLERBRDFLUT
 // macro to include MaxPlay Vertex Elements
 // from HOG_shader_ui.fxh macros
 // vertexElementPosition
-HOG_PROPERTY_VERTEX_ELEMENT_POSITION;
+HOG_PROPERTY_VERTEX_ELEMENT_POSITION
 // vertexElementColor
-HOG_PROPERTY_VERTEX_ELEMENT_COLOR;
+HOG_PROPERTY_VERTEX_ELEMENT_COLOR
 // vertexElementUV
-HOG_PROPERTY_VERTEX_ELEMENT_UV;
+HOG_PROPERTY_VERTEX_ELEMENT_UV
 // vertexElementNormal
-HOG_PROPERTY_VERTEX_ELEMENT_NORMAL;
+HOG_PROPERTY_VERTEX_ELEMENT_NORMAL
 // vertexElementBinormal
-HOG_PROPERTY_VERTEX_ELEMENT_BINORMAL;
+HOG_PROPERTY_VERTEX_ELEMENT_BINORMAL
 // vertexElementTangent
-HOG_PROPERTY_VERTEX_ELEMENT_TANGENT;
+HOG_PROPERTY_VERTEX_ELEMENT_TANGENT
 
 //------------------------------------
 // Textures
@@ -98,14 +98,35 @@ HOG_MAP_BASENORMAL
 HOG_MAP_PBRMASKS
 
 // These are PBR IBL env related texture inputs
+// Plus additional hemispherical ambient properties
+// useEnvMaps
+HOG_ENV_BOOL
+// envMapType
+HOG_ENVMAP_TYPE
 // brdfTextureMap
 HOG_MAP_BRDF 
 // diffuseEnvTextureCube
 HOG_CUBEMAP_IBLDIFF 
 // specularEnvTextureCube
 HOG_CUBEMAP_IBLSPEC 
+// diffuseEnvTextureLatlong
+HOG_LATLONG_IBLDIFF
+// specularEnvTextureLatlong
+HOG_LATLONG_IBLSPEC
 // envLightingExp
 HOG_ENVLIGHTING_EXP
+// sceneAmbientLight ... DEPRECATED
+//HOG_PROPERTY_SCENE_AMBIENTLIGHT
+// ambientSkyColor
+HOG_PROPERTY_SCENE_AMBIENTSKY
+// ambientGroundColor
+HOG_PROPERTY_SCENE_AMBIENTGRND
+// ambientSkyIntensity
+HOG_PROPERTY_SCENE_AMBSKYINT
+// ambientGrndIntensity
+HOG_PROPERTY_SCENE_AMBGRNDINT
+// hemisphericalAmbientyMode
+HOG_PROPERTY_SCENE_AMBHEMIMODE
 
 //------------------------------------
 // Per Frame constant buffer
@@ -200,7 +221,7 @@ cbuffer UpdatePerObject : register(b1)
 	HOG_PROPERTY_BLOOM_EXP
 	// useLightColorAsLightSpecularColor:	bool
 	HOG_PROPERTY_USE_LIGHT_COLOR_AS_LIGHT_SPECULAR_COLOR
-	// useApproxToneMapping:			bool
+	// useApproxToneMapping:				bool
 	HOG_PROPERTY_USE_APPROX_TONE_MAPPING
 	// useGammaCorrectShader:				bool
 	HOG_PROPERTY_GAMMA_CORRECT_SHADER
@@ -415,7 +436,21 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 
 	// Transform the normal into world space where the light data is
 	// Normalize proper normal lengths after decoding dxt normals and creating Z
-	float3 n = normalize(mul(nTS, p.m_TWMtx));
+	float3 n = normalize( mul( nTS, p.m_TWMtx ) );
+
+	// Set up hemispherical ambient done values
+	float3 ambSkyLinColor = pow(ambientSkyColor.rgb, gammaCorrectionExponent);
+	ambSkyLinColor *= ambientSkyIntensity;
+	float3 ambGrdLinColor = pow(ambientGroundColor.rgb, gammaCorrectionExponent);
+	ambGrdLinColor *= ambientGrndIntensity;
+	
+	// calculate the hemispherical ambient value
+	#ifndef _ZUP_
+		float ambientUpAxis = n.y;
+	#else
+		float ambientUpAxis = n.z;
+	#endif
+	float3 ambDomeLinColor = ( lerp( ambGrdLinColor.rgb, ambSkyLinColor.rgb, saturate( ( ambientUpAxis * 0.5 ) + 0.5 ) ) );
 
 	// setup lights
 	MayaLight lights[4];
@@ -460,6 +495,7 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 
 	// but lets not hard code it!
 	// IOR values: http://www.pixelandpoly.com/ior.html#C
+	// More IOR:  http://forums.cgsociety.org/archive/index.php?t-513458.html
 	// water has a IOR of 1.333, converted it's F0 is appox 0.02
 	//float3 F0 = abs(pow((1.0f - materialIOR), 2.0f) / pow((1.0f + materialIOR), 2.0f));
 	float F0 = abs((1.0f - materialIOR) / (1.0f + materialIOR));
@@ -606,6 +642,7 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 		}
 		else if (lights[i].m_Type == 5) //Ambient
 		{
+			// I am pretty sure I shouldn't be doing all of this work for an ambient light!
 			float3 H = normalize(-n + p.m_View.xyz);
 			float NdotL = saturate(dot(n, -n));
 			float LdotH = saturate(dot(-n, H));
@@ -615,29 +652,73 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 			float diffuse_term = bigD_DiffuseBRDF(roughnessBiased, NdotL, NdotV, LdotH);
 			float specular_term = LightingFuncGGX_REF(H, NdotL, NdotV, NdotH, LdotH, roughA, roughA2, F0);
 
-			diffuse += (diffuse_term * lights[i].m_Diffuse * lights[i].m_Intensity * NdotL * ssao);
-			specular += (specular_term * lights[i].m_Diffuse * lights[i].m_Intensity * NdotL * ssao);
+			diffuse += (diffuse_term * lights[i].m_Diffuse * lights[i].m_Intensity * NdotL);
+			specular += (specular_term * lights[i].m_Diffuse * lights[i].m_Intensity * NdotL);
+		}
+	}
+	// Set up envmap values
+	float3 diffEnvLin = (0.0f, 0.0f, 0.0f);
+	float3 specEnvLin = (0.0f, 0.0f, 0.0f);
+	float3 brdfMap = (0.0f, 0.0f, 0.0f);
+	float4 diffEnvMap = (0.0f, 0.0f, 0.0f, 0.0f);
+	float4 specEnvMap = (0.0f, 0.0f, 0.0f, 0.0f);
+
+	// set up hemispherical ambient
+	if (useEnvMaps)
+	{
+		// reflection is incoming light
+		float3 R = -reflect(p.m_View.xyz, n);
+		// this probably should not be a constant!
+		const float rMipCount = 8.0f;
+		// calc the mip level to fetch based on roughness
+		float roughMip = pbrRoughness * rMipCount;
+
+		// load cubemaps
+		if (envMapType == 0)
+		{
+			// load maps
+			brdfMap = brdfTextureMap.Sample(SamplerBrdfLUT, float2(NdotV, roughnessBiased), 0.0f).xyz;
+			diffEnvMap = diffuseEnvTextureCube.SampleLevel(SamplerCubeMap, n, 0.0f).rgba;
+			specEnvMap = specularEnvTextureCube.SampleLevel(SamplerCubeMap, R, roughMip).rgba;
+		}
+
+		// load latlong maps (ToDo: not implemented yet)
+		if (envMapType == 1)
+		{
+			// load maps
+			brdfMap = brdfTextureMap.Sample(SamplerBrdfLUT, float2(NdotV, roughnessBiased), 0.0f).xyz;
+			diffEnvMap = diffuseEnvTextureCube.SampleLevel(SamplerCubeMap, n, 0.0f).rgba;
+			specEnvMap = specularEnvTextureCube.SampleLevel(SamplerCubeMap, R, roughMip).rgba;
+		}
+
+		// decode RGBM --> HDR
+		diffEnvLin = RGBMDecode(diffEnvMap, envLightingExp, gammaCorrectionExponent).rgb;
+		specEnvLin = RGBMDecode(specEnvMap, envLightingExp, gammaCorrectionExponent).rgb;
+	}
+
+	// set up hemispherical ambient
+	if (hemisphericalAmbientyMode > 0)
+	{
+		// 0 is None, so don't include the hemispherical ambient
+		// 1 is ADD, so we add it's contribution (to the env maps, or lack there of)
+		if (hemisphericalAmbientyMode == 1)
+		{
+			diffEnvLin.rgb += ambDomeLinColor.rgb;
+		}
+		// 2 is MULTIPLY, multiply the env maps by the hemispherical ambient i.e. tint
+		if (hemisphericalAmbientyMode == 2)
+		{
+			diffEnvLin.rgb *= ambDomeLinColor.rgb;
 		}
 	}
 
-	// load
-	float4 diffEnvMap = diffuseEnvTextureCube.SampleLevel(SamplerCubeMap, n, 0.0f).rgba;
-	float3 diffEnvLin = RGBMDecode(diffEnvMap, envLightingExp, gammaCorrectionExponent).rgb;  // decode to HDR
-	diffuse.rgb += diffEnvLin * matAmbLin.rgb;
-
-	// reflection is incoming light
-	float3 R = -reflect(p.m_View.xyz, n);
-
-	float3 brdfMap = brdfTextureMap.Sample(SamplerBrdfLUT, float2(NdotV, roughnessBiased), 0.0f).xyz;
-	const float rMipCount = 8.0f;
-	float roughMip = pbrRoughness * rMipCount;
-
-	float4 specEnvMap = specularEnvTextureCube.SampleLevel(SamplerCubeMap, R, roughMip).rgba;
-	float3 specEnvLin = RGBMDecode(specEnvMap, envLightingExp, gammaCorrectionExponent);  // decode to HDR
+	// colored specular for metalness
 	float3 cSpecLin = lerp(F0.xxx, specEnvLin.rgb, materialMetalness) * brdfMap.x + brdfMap.y;
 	//float3 fcSpecLin = Specular_F_Roughness(cSpecLin, roughA2, NdotV);
 
-	specular.rgb += matAmbLin.rgb * cSpecLin;
+	// nerf the ambient contribution with
+	diffuse.rgb += diffEnvLin * matAmbLin.rgb;
+	specular.rgb += cSpecLin * matAmbLin.rgb;
 
 	// ----------------------
 	// FINAL COLOR AND ALPHA:
@@ -650,11 +731,6 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	// final alpha:
 	transperancy = opacity < 1.0f ? (transperancy * opacity) : transperancy;
 	o.m_Color.w = transperancy;
-
-	//o.m_Color.rgb = fcSpecLin.rgb;
-
-	//o.m_Color.rgb = cSpecLin;
-	//o.m_Color.rgb = ambDomeCs.rgb * matAmbLin.rgb * cSpecLin * ssao;
 
 	float3 result = o.m_Color.rgb * transperancy;
 

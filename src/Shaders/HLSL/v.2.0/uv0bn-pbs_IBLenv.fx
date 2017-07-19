@@ -25,8 +25,8 @@ static const float cg_PI = 3.141592666f;
 #define _3DSMAX_SPIN_MAX 99999
 
 #ifndef _MAYA_
-	#define _3DSMAX_	// at time of writing this shader, Nitrous driver did not have the _3DSMAX_ define set
-	#define _ZUP_		// Maya is Y up, 3dsMax is Z up
+#define _3DSMAX_	// at time of writing this shader, Nitrous driver did not have the _3DSMAX_ define set
+#define _ZUP_		// Maya is Y up, 3dsMax is Z up
 #endif
 
 // general includes
@@ -51,7 +51,7 @@ static const float cg_PI = 3.141592666f;
 // Map Channels
 //------------------------------------
 #ifdef _3DSMAX_
-	MAXTEXCOORD0
+MAXTEXCOORD0
 #endif
 
 //------------------------------------
@@ -104,11 +104,11 @@ HOG_ENV_BOOL
 // envMapType
 HOG_ENVMAP_TYPE
 // brdfTextureMap
-HOG_MAP_BRDF 
+HOG_MAP_BRDF
 // diffuseEnvTextureCube
-HOG_CUBEMAP_IBLDIFF 
+HOG_CUBEMAP_IBLDIFF
 // specularEnvTextureCube
-HOG_CUBEMAP_IBLSPEC 
+HOG_CUBEMAP_IBLSPEC
 // diffuseEnvTextureLatlong
 HOG_LATLONG_IBLDIFF
 // specularEnvTextureLatlong
@@ -133,14 +133,14 @@ HOG_PROPERTY_SCENE_AMBHEMIMODE
 //------------------------------------
 cbuffer UpdatePerFrame : register(b0)
 {
-	float4x4 viewInv 		: ViewInverse 			< string UIWidget = "None"; >;   
-	float4x4 view			: View					< string UIWidget = "None"; >;
-	float4x4 prj			: Projection			< string UIWidget = "None"; >;
-	float4x4 viewPrj		: ViewProjection		< string UIWidget = "None"; >;
+	float4x4 viewInv 		: ViewInverse < string UIWidget = "None"; > ;
+	float4x4 view			: View < string UIWidget = "None"; > ;
+	float4x4 prj			: Projection < string UIWidget = "None"; > ;
+	float4x4 viewPrj		: ViewProjection < string UIWidget = "None"; > ;
 
 	// A shader may wish to do different actions when Maya is rendering the preview swatch (e.g. disable displacement)
 	// This value will be true if Maya is rendering the swatch
-	bool IsSwatchRender     : MayaSwatchRender      < string UIWidget = "None"; > = false;
+	bool IsSwatchRender : MayaSwatchRender < string UIWidget = "None"; > = false;
 
 	// If the user enables viewport gamma correction in Maya's global viewport rendering settings, the shader should not do gamma again
 	bool MayaFullScreenGamma : MayaGammaCorrection < string UIWidget = "None"; > = false;
@@ -151,12 +151,12 @@ cbuffer UpdatePerFrame : register(b0)
 //------------------------------------
 cbuffer UpdatePerObject : register(b1)
 {
-	float4x4	World				: World 				< string UIWidget = "None"; >;
-	float4x4	WorldView			: WorldView				< string UIWidget = "None"; >;
-	float4x4	WorldIT 			: WorldInverseTranspose	< string UIWidget = "None"; >;
-	float4x4	WorldViewProj		: WorldViewProjection	< string UIWidget = "None"; >;  //<-- may not need?
+	float4x4	World				: World < string UIWidget = "None"; > ;
+	float4x4	WorldView			: WorldView < string UIWidget = "None"; > ;
+	float4x4	WorldIT 			: WorldInverseTranspose < string UIWidget = "None"; > ;
+	float4x4	WorldViewProj		: WorldViewProjection < string UIWidget = "None"; > ;
 
-	// these are per-object includes for this cBuffer
+	//these are per-object includes for this cBuffer
 	// they come from pbr_shader_ui.fxh
 	// "Material Properties" UI group
 	// hasAlpha
@@ -187,7 +187,7 @@ cbuffer UpdatePerObject : register(b1)
 	// "Lighting Properties"
 	// materialAmbient:			sRGB
 	// this is the amount of ambient influence 3-channel
-	HOG_PROPERTY_MATERIAL_AMBIENT
+	//HOG_PROPERTY_MATERIAL_AMBIENT
 	// linearSpaceLighting:		bool
 	HOG_PROPERTY_LINEAR_SPACE_LIGHTING
 	// flipBackfaceNormals:		bool
@@ -236,18 +236,18 @@ cbuffer UpdatePerObject : register(b1)
 
 } //end UpdatePerObject cbuffer
 
-//------------------------------------
-// DEBUG
-//------------------------------------
-/**
-@Widget DebugMenu
-@brief provides a menu to the user for enabling debug modes supported by this fx file
-*/
+  //------------------------------------
+  // DEBUG
+  //------------------------------------
+  /**
+  @Widget DebugMenu
+  @brief provides a menu to the user for enabling debug modes supported by this fx file
+  */
 int g_DebugMode
-<		
+<
 	string UIGroup = "DEBUG [Preview]";
 	string UIWidget = "Slider";
-	string UIFieldNames = "none:n.x:n.y:n.z:diffuseMap0:diffuse(linear):normalMap0:NormalMapUnpacked:diffuse:specular:p.m_TWMtx[0]:p.m_TWMtx[1]:p.m_TWMtx[2]:h:NdotL:NdotV:LdotH:light0viewDir";
+	string UIFieldNames = "o.m_Color.rgb:baseColorT.rgb:baseColorT.aaa:bColorLin.rgb:mColorLin.rgb:p.m_albedoRGBA.rgb:p.m_albedoRGBA.aaa:pbrMetalness.xxx:pbrRoughness.xxx:pbrAO.xxx:pbrCavity.xxx:baseNormalMap.xyz:normalRaw.xyz:F0.xxx:bClum.xxx:Ctint.rgb:Cspec0.rgb:diffuse.rgb:specular.rgb:pbrRoughness.xxx:roughA.xxx:roughA2.xxx:roughnessBiasedA.xxx:roughnessBiasedA2.xxx:NdotV:ambDomeColor.rgb:ambDomeLinColor.rgb:diffEnvLin.rgb:specEnvLin.rgb:cSpecLin";
 	string UIName = "DEBUG VIEW";
 	int UIOrder = 0;
 > = 0;
@@ -284,7 +284,7 @@ struct vsInput
 @struct VsOutput
 @brief Output from the vertex unit to later stages of GPU execution
 */
-struct VsOutput 
+struct VsOutput
 {
 	float4 m_Position		: SV_POSITION;
 	float4 m_albedoRGBA     : COLOR0;
@@ -300,7 +300,7 @@ struct VsOutput
 @return VsOutput The results from the vertex shader passed to later GPU stages
 @param[in] v Input from the vertex assembly unit
 */
-VsOutput vsMain(vsInput v) 
+VsOutput vsMain(vsInput v)
 {
 	VsOutput OUT = (VsOutput)0;
 
@@ -312,26 +312,26 @@ VsOutput vsMain(vsInput v)
 	if (useVertexC0_RGBA)
 		// Interpolate and ouput vertex color 0
 		OUT.m_albedoRGBA.rgb = v.m_AlbedoRGBA.rgb;
-		OUT.m_albedoRGBA.w = v.m_AlbedoRGBA.w;
+	OUT.m_albedoRGBA.w = v.m_AlbedoRGBA.w;
 
-		// setup Gamma Corrention
-		float gammaCexp = linearSpaceLighting ? gammaCorrectionValue : 1.0;
+	// setup Gamma Corrention
+	float gammaCexp = linearSpaceLighting ? gammaCorrectionValue : 1.0;
 
-		// convert sRGB color per-vertex to linear?
-		OUT.m_albedoRGBA.rgb = linearSpaceLighting ? pow(v.m_AlbedoRGBA.rgb, gammaCexp) : OUT.m_albedoRGBA.rgb;
-	
+	// convert sRGB color per-vertex to linear?
+	OUT.m_albedoRGBA.rgb = linearSpaceLighting ? pow(v.m_AlbedoRGBA.rgb, gammaCexp) : OUT.m_albedoRGBA.rgb;
+
 	if (useVertexC1_AO)
 		// Interpolate and ouput vertex color 1
 		OUT.m_vertexAO.rgb = v.m_vertexAO.rgb;
-		OUT.m_vertexAO.w = v.m_vertexAO.w;
+	OUT.m_vertexAO.w = v.m_vertexAO.w;
 
 	// Pass through texture coordinates
 	// flip Y for Maya
-	#ifdef _MAYA_
-		OUT.m_Uv0 = float2(v.m_Uv0.x, (1.0 - v.m_Uv0.y));
-	#else
-		OUT.m_Uv0 = v.m_Uv0;
-	#endif
+#ifdef _MAYA_
+	OUT.m_Uv0 = float2(v.m_Uv0.x, (1.0 - v.m_Uv0.y));
+#else
+	OUT.m_Uv0 = v.m_Uv0;
+#endif
 
 	// Build the view vector and cache its length in W
 	// pulling the view position in world space from the inverse view matrix 4th row
@@ -346,7 +346,7 @@ VsOutput vsMain(vsInput v)
 	tLocal[2] = v.m_Normal;
 
 	// Calculate the tangent to world space matrix
-	OUT.m_TWMtx = mul(tLocal, (float3x3)World);	
+	OUT.m_TWMtx = mul(tLocal, (float3x3)World);
 
 	return OUT;
 }
@@ -373,9 +373,9 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	PsOutput o;
 
 	// MAYA | MAX Stuff
-	#ifdef _3DSMAX_
-		FrontFace = !FrontFace;
-	#endif
+#ifdef _3DSMAX_
+	FrontFace = !FrontFace;
+#endif
 
 	// texture maps and such
 	//baseColor, need to fetch it now so we can clip against albedo alpha channel
@@ -409,8 +409,6 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	// FIX UP all color values --> Linear
 	// base color linear
 	float3 bColorLin = pow(materialBaseColor.rgb * baseColorT.rgb, gammaCorrectionExponent);
-	// Material Color
-	float3 matAmbLin = pow(materialAmbient.rgb, gammaCorrectionExponent);
 
 	// combine the linear vertex color RGB and the linear base color
 	if (useVertexC0_RGBA)
@@ -436,21 +434,21 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 
 	// Transform the normal into world space where the light data is
 	// Normalize proper normal lengths after decoding dxt normals and creating Z
-	float3 n = normalize( mul( nTS, p.m_TWMtx ) );
+	float3 n = normalize(mul(nTS, p.m_TWMtx));
 
 	// Set up hemispherical ambient done values
 	float3 ambSkyLinColor = pow(ambientSkyColor.rgb, gammaCorrectionExponent);
 	ambSkyLinColor *= ambientSkyIntensity;
 	float3 ambGrdLinColor = pow(ambientGroundColor.rgb, gammaCorrectionExponent);
 	ambGrdLinColor *= ambientGrndIntensity;
-	
+
 	// calculate the hemispherical ambient value
-	#ifndef _ZUP_
-		float ambientUpAxis = n.y;
-	#else
-		float ambientUpAxis = n.z;
-	#endif
-	float3 ambDomeLinColor = ( lerp( ambGrdLinColor.rgb, ambSkyLinColor.rgb, saturate( ( ambientUpAxis * 0.5 ) + 0.5 ) ) );
+#ifndef _ZUP_
+	float ambientUpAxis = n.y;
+#else
+	float ambientUpAxis = n.z;
+#endif
+	float3 ambDomeLinColor = (lerp(ambGrdLinColor.rgb, ambSkyLinColor.rgb, saturate((ambientUpAxis * 0.5) + 0.5)));
 
 	// setup lights
 	MayaLight lights[4];
@@ -468,30 +466,34 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	//G = Roughness(most important in pbr, that's why it's in green)
 	//B = AO(this might really suck when compressed)
 	//A = Cavity(likely finest grain lines, needs good compression)
-	float pbrMetalness = pbrMasks.r * materialMetalness;
-	float pbrRoughness = pbrMasks.g * materialRoughness;
-	float pbrAO = pbrMasks.b;
-	float pbrCavity = pbrMasks.a;
-
-	// set up a value, to multiple things like AO based on the bump intensity
+	float pbrMetalness = pbrMasks.r;
 	pbrMetalness = lerp(float(0.0f).xxx, pbrMetalness, materialMetalness);
+	float pbrRoughness = pbrMasks.g;
 	pbrRoughness = lerp(float(0.0f).xxx, pbrRoughness, materialRoughness);
-
+	float pbrAO = pbrMasks.b;
 	float bumpAO = lerp(float(1.0f).xxx, pbrAO, materialBumpIntensity);
+	float pbrCavity = pbrMasks.a;
 	float bumpCavity = lerp(float(1.0f).xxx, pbrCavity, materialBumpIntensity);
 
-	// Calculate lighting contribution per light type
+	// For calculate lighting contribution per light type
 	// diffuse : Resulting diffuse color
-	// specular : Resulting specular color
 	float4 diffuse = float4(0.0f, 0.0f, 0.0f, 0.0f);
+	// specular : Resulting specular color
 	float4 specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
+
+	// base color variant for metals
 	float3 mColorLin = bColorLin.rgb * (1.0f - pbrMetalness);
-	
+
 	// F0 : Specular reflection coefficient (this is a scalar, not a color value!)
 	//non-metals are 3% reflective... approximately
 	// if you were going to hard code something, this would be a good guess
 	//float3 F0 = lerp(float3(0.03, 0.03, 0.03), mColorLin, pbrMetalness);
 	// but some escoteric materials might have different rgb values for F0?
+
+	// If we want to replace this with an F0 input texture
+	// the conversion into color space is pow(F0, 1/2.2333 ) * 255;
+	// Not a bad idea, so we can have per-pixel F0 value changes
+	// Pretty sure this is what most engines do actually
 
 	// but lets not hard code it!
 	// IOR values: http://www.pixelandpoly.com/ior.html#C
@@ -500,27 +502,36 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	//float3 F0 = abs(pow((1.0f - materialIOR), 2.0f) / pow((1.0f + materialIOR), 2.0f));
 	float F0 = abs((1.0f - materialIOR) / (1.0f + materialIOR));
 	F0 = F0 * F0;  // to the power of 2
-	// If we want to replace this with an F0 input texture
-	// the conversion into color space is pow(F0, 1/2.2333 ) * 255;
-	// Not a bad idea, so we can have per-pixel F0 value changes
-	// Pretty sure this is what most engines do actually
 
-	// build rounghnessA
-	//float roughA = pbrRoughness * pbrRoughness;
-	// build roughness biased
-	float roughnessBiased = pbrRoughness * pbrRoughness * (1.0 - ROUGHNESS_BIAS) + ROUGHNESS_BIAS;
-	// build roughA and roughA2
-	float roughA = roughnessBiased * roughnessBiased;
+	// Specular tint (from disney plausible)
+	//float3 bColorLin = albedo.rgb; // pass in color already converted to linear
+	float specularA = 1.0f;
+	float specularTint = 0.0f;
+	// luminance approx.
+	float bClum = 0.3f * bColorLin[0] + 0.6f * bColorLin[1] + 0.1f * bColorLin[2];
+	// normalize lum. to isolate hue+sat
+	float3 Ctint = bClum > 0.0f ? bColorLin / bClum : 1.0f.xxx;
+
+	// calculate the colored specular F0
+	float3 Cspec0 = lerp(specularA * F0 * lerp(1.0f.xxx, Ctint, specularTint), bColorLin, pbrMetalness);
+
+	// build variations of roughness
+	float roughA = pbrRoughness * pbrRoughness;
 	float roughA2 = roughA * roughA;
-	//specular.rgb = lerp(F0, mColorLin, pbrMetalness);
+
+	// build roughness biased
+	float roughnessBiasedA = roughA * (1.0 - ROUGHNESS_BIAS) + ROUGHNESS_BIAS;
+	float roughnessBiasedA2 = roughnessBiasedA * roughnessBiasedA;
 
 	// This won't change per-light so calulate it outside of the loop
 	//float NdotV = clamp(dot(n, p.m_View.xyz), 0.00001, 1.0);
-	//float NdotV = max(dot(n, p.m_View.xyz), 1e-5);	// constant to prevent NaN
-	float NdotV = abs(dot(n, p.m_View.xyz)) + EPSILON;	// Avoid artifact - Ref: SIGGRAPH14 - Moving Frosbite to PBR
+	// constant to prevent NaN
+	//float NdotV = max(dot(n, p.m_View.xyz), 1e-5);	
+	// Avoid artifact - Ref: SIGGRAPH14 - Moving Frosbite to PBR
+	float NdotV = abs(dot(n, p.m_View.xyz)) + EPSILON;
 
 	//going to just use a constant value for shadow instead (to disregard)
-	float4 shadow = float4(1.0f, 1.0f, 1.0f, 1.0f);
+	float4 shadow = (1.0f, 1.0f, 1.0f, 1.0f);
 
 	// This is here for reference, the engine directional sunlight
 	// We need this in maya - just let the artist use a bound light as directional
@@ -546,37 +557,35 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	{
 
 		if (lights[i].m_Enabled == false)
-		// if the light is disabled/hidden in Maya skip it
+			// if the light is disabled/hidden in Maya skip it
 		{
 			continue;
 		}
 		if (lights[i].m_Type == 4 || lights[i].m_Type == 1) //Directional
 		{
 			// half angle of light direction and the view
-			float3 H = normalize( lights[i].m_Direction.xyz + p.m_View.xyz );
+			float3 H = normalize(lights[i].m_Direction.xyz + p.m_View.xyz);
 			// dot product of the normal and the light direction
-			float NdotL = saturate( dot( n, lights[i].m_Direction.xyz ));
+			float NdotL = saturate(dot(n, lights[i].m_Direction.xyz));
 			// dot product of the light direction and the half angle
-			float LdotH = saturate( dot( lights[i].m_Direction.xyz, H ));
+			float LdotH = saturate(dot(lights[i].m_Direction.xyz, H));
 			// dot product of the normal and halfAngle
-			float NdotH = saturate( dot( n, H ));
+			float NdotH = saturate(dot(n, H));
 
 			// dot of view and half angle
 			float VdotH = saturate(dot(p.m_View.xyz, H));
 
 			// calculate the diffuse term
-			//float diffuse_term = bigD_DiffuseBRDF(pbrMetalness, roughnessBiased, NdotL, NdotV, LdotH);
-			float diffuse_term = bigD_DiffuseBRDF(roughnessBiased, NdotL, NdotV, LdotH);
+			float diffuse_term = bigD_DiffuseBRDF(roughnessBiasedA, NdotL, NdotV, LdotH);
 			// calculate the specular term
-			float specular_term = LightingFuncGGX_REF(H, NdotL, NdotV, NdotH, LdotH, roughA, roughA2, F0);
+			float specular_term = LightingFuncGGX_REF(H, NdotL, NdotV, NdotH, LdotH, roughnessBiasedA, roughnessBiasedA2, Cspec0);
 
 			diffuse += (diffuse_term * lights[i].m_Diffuse * lights[i].m_Intensity * NdotL);
-			// no specular in this version, full diffuse
 			specular += (specular_term * lights[i].m_Specular * lights[i].m_Intensity * NdotL);
 
 			if (useShadows && lights[i].m_LightShadowOn)
 			{
-				float shadow = lightShadow(i, lights[i].m_LightViewPrj, SamplerShadowDepth, p.m_WorldPosition.xyz, shadowMultiplier, shadowDepthBias);
+				shadow = lightShadow(i, lights[i].m_LightViewPrj, SamplerShadowDepth, p.m_WorldPosition.xyz, shadowMultiplier, shadowDepthBias);
 				diffuse *= shadow;
 				specular *= shadow;
 			}
@@ -601,12 +610,10 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 			float NdotH = saturate(dot(n, H));
 			float VdotH = saturate(dot(p.m_View.xyz, H));
 
-			//float diffuse_term = bigD_DiffuseBRDF(pbrMetalness, roughnessBiased, NdotL, NdotV, LdotH);
-			float diffuse_term = bigD_DiffuseBRDF(roughnessBiased, NdotL, NdotV, LdotH);
-			float specular_term = LightingFuncGGX_REF(H, NdotL, NdotV, NdotH, LdotH, roughA, roughA2, F0);
+			float diffuse_term = bigD_DiffuseBRDF(roughnessBiasedA, NdotL, NdotV, LdotH);
+			float specular_term = LightingFuncGGX_REF(H, NdotL, NdotV, NdotH, LdotH, roughnessBiasedA, roughnessBiasedA2, Cspec0);
 
 			diffuse += (diffuse_term * lights[i].m_Diffuse * lights[i].m_Intensity * NdotL * a);
-			// no specular in this version, full diffuse
 			specular += (specular_term * lights[i].m_Specular * lights[i].m_Intensity * NdotL * a);
 		}
 		else if (lights[i].m_Type == 2) //Spot
@@ -631,12 +638,10 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 				float NdotH = saturate(dot(n, H));
 				float VdotH = saturate(dot(p.m_View.xyz, H));
 
-				//float diffuse_term = bigD_DiffuseBRDF(pbrMetalness, roughnessBiased, NdotL, NdotV, LdotH);
-				float diffuse_term = bigD_DiffuseBRDF(roughnessBiased, NdotL, NdotV, LdotH);
-				float specular_term = LightingFuncGGX_REF(H, NdotL, NdotV, NdotH, LdotH, roughA, roughA2, F0);
+				float diffuse_term = bigD_DiffuseBRDF(roughnessBiasedA, NdotL, NdotV, LdotH);
+				float specular_term = LightingFuncGGX_REF(H, NdotL, NdotV, NdotH, LdotH, roughnessBiasedA, roughnessBiasedA2, Cspec0);
 
 				diffuse += (diffuse_term * lights[i].m_Diffuse * lights[i].m_Intensity * NdotL * a * spot);
-				// no specular in this version, full diffuse
 				specular += (specular_term * lights[i].m_Specular * lights[i].m_Intensity * NdotL * a * spot);
 			}
 		}
@@ -649,8 +654,8 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 			float NdotH = saturate(dot(n, H));
 			float VdotH = saturate(dot(p.m_View.xyz, H));
 
-			float diffuse_term = bigD_DiffuseBRDF(roughnessBiased, NdotL, NdotV, LdotH);
-			float specular_term = LightingFuncGGX_REF(H, NdotL, NdotV, NdotH, LdotH, roughA, roughA2, F0);
+			float diffuse_term = bigD_DiffuseBRDF(roughnessBiasedA, NdotL, NdotV, LdotH);
+			float specular_term = LightingFuncGGX_REF(H, NdotL, NdotV, NdotH, LdotH, roughnessBiasedA, roughnessBiasedA2, Cspec0);
 
 			diffuse += (diffuse_term * lights[i].m_Diffuse * lights[i].m_Intensity * NdotL);
 			specular += (specular_term * lights[i].m_Diffuse * lights[i].m_Intensity * NdotL);
@@ -669,15 +674,16 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 		// reflection is incoming light
 		float3 R = -reflect(p.m_View.xyz, n);
 		// this probably should not be a constant!
-		const float rMipCount = 8.0f;
+		const float rMipCount = 9.0f;
 		// calc the mip level to fetch based on roughness
-		float roughMip = pbrRoughness * rMipCount;
+		float roughMip = roughA * rMipCount;
+
+		// load brdf lookup
+		brdfMap = brdfTextureMap.Sample(SamplerBrdfLUT, float2(NdotV, roughnessBiasedA), 0.0f).xyz;
 
 		// load cubemaps
 		if (envMapType == 0)
 		{
-			// load maps
-			brdfMap = brdfTextureMap.Sample(SamplerBrdfLUT, float2(NdotV, roughnessBiased), 0.0f).xyz;
 			diffEnvMap = diffuseEnvTextureCube.SampleLevel(SamplerCubeMap, n, 0.0f).rgba;
 			specEnvMap = specularEnvTextureCube.SampleLevel(SamplerCubeMap, R, roughMip).rgba;
 		}
@@ -685,8 +691,6 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 		// load latlong maps (ToDo: not implemented yet)
 		if (envMapType == 1)
 		{
-			// load maps
-			brdfMap = brdfTextureMap.Sample(SamplerBrdfLUT, float2(NdotV, roughnessBiased), 0.0f).xyz;
 			diffEnvMap = diffuseEnvTextureCube.SampleLevel(SamplerCubeMap, n, 0.0f).rgba;
 			specEnvMap = specularEnvTextureCube.SampleLevel(SamplerCubeMap, R, roughMip).rgba;
 		}
@@ -696,6 +700,10 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 		specEnvLin = RGBMDecode(specEnvMap, envLightingExp, gammaCorrectionExponent).rgb;
 	}
 
+	// tinted specular verus colored specular for metalness
+	float3 cSpecLin = lerp(Cspec0.rgb, bColorLin.rgb, pbrMetalness) * brdfMap.x + brdfMap.y;
+	//float3 fcSpecLin = Specular_F_Roughness(cSpecLin, roughnessBiased, NdotV);
+
 	// set up hemispherical ambient
 	if (hemisphericalAmbientyMode > 0)
 	{
@@ -704,28 +712,29 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 		if (hemisphericalAmbientyMode == 1)
 		{
 			diffEnvLin.rgb += ambDomeLinColor.rgb;
+			specEnvLin.rgb += ambDomeLinColor.rgb;
 		}
 		// 2 is MULTIPLY, multiply the env maps by the hemispherical ambient i.e. tint
 		if (hemisphericalAmbientyMode == 2)
 		{
 			diffEnvLin.rgb *= ambDomeLinColor.rgb;
+			specEnvLin.rgb *= ambDomeLinColor.rgb;
 		}
 	}
 
-	// colored specular for metalness
-	float3 cSpecLin = lerp(F0.xxx, specEnvLin.rgb, materialMetalness) * brdfMap.x + brdfMap.y;
-	//float3 fcSpecLin = Specular_F_Roughness(cSpecLin, roughA2, NdotV);
+	diffuse.rgb += diffEnvLin;
 
-	// nerf the ambient contribution with
-	diffuse.rgb += diffEnvLin * matAmbLin.rgb;
-	specular.rgb += cSpecLin * matAmbLin.rgb;
+	// Multiply the specular by colored specular and specular amount
+	specular.rgb *= cSpecLin.rgb * specularA;
+	specEnvLin.rgb *= cSpecLin.rgb * specularA;
+	specular.rgb += specEnvLin;
 
 	// ----------------------
 	// FINAL COLOR AND ALPHA:
 	// ----------------------
 	// add the cumulative diffuse and specular
 	//o.m_Color.xyz = (diffuse.xyz * base.xyz) + (specular.xyz * base.xyz) + matEmissive.xyz;
-	o.m_Color.rgb =  (diffuse.rgb * mColorLin.rgb * bumpAO * vertAO * ssao);
+	o.m_Color.rgb = (diffuse.rgb * mColorLin.rgb * bumpAO * vertAO * ssao);
 	o.m_Color.rgb += (specular.rgb * bColorLin.rgb * bumpAO * vertAO * ssao * pbrCavity);
 
 	// final alpha:
@@ -734,51 +743,49 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 
 	float3 result = o.m_Color.rgb * transperancy;
 
-		// do gamma correction in shader:
-		if (!MayaFullScreenGamma)
-			if (useGammaCorrectShader)
-				// this might need to be here with tonemapping?
-				result = pow(result, 1 / gammaCorrectionExponent);
+	// do gamma correction in shader:
+	if (!MayaFullScreenGamma)
+		if (useGammaCorrectShader)
+			// this might need to be here with tonemapping?
+			result = pow(result, 1 / gammaCorrectionExponent);
 
 	if (useApproxToneMapping)
 		result = approxToneMapping(result, bloomExp);
 
 // Debug views
+//"o.m_Color.rgb:baseColorT.rgb:baseColorT.aaa:bColorLin.rgb:mColorLin.rgb:p.m_albedoRGBA.rgb:p.m_albedoRGBA.aaa:pbrMetalness.xxx:pbrRoughness.xxx:pbrAO.xxx:pbrCavity.xxx:baseNormalMap.xyz:normalRaw.xyz:F0.xxx:bClum.xxx:Ctint.rgb:Cspec0.rgb:diffuse.rgb:specular.rgb:pbrRoughness.xxx:roughA.xxx:roughA2.xxx:roughnessBiasedA.xxx:roughnessBiasedA2.xxx:NdotV:ambDomeColor.rgb:ambDomeLinColor.rgb:diffEnvLin.rgb:specEnvLin.rgb:cSpecLin"
 #ifdef _MAYA_
 	if (g_DebugMode > 0)
 	{
-		float3 H = normalize(lights[0].m_Direction.xyz + p.m_View.xyz);
-		// "none:n.x:n.y:n.z:diffuseMap0:diffuse(linear):normalMap0:NormalMapUnpacked:diffuse:specular:p.m_TWMtx[0]:p.m_TWMtx[1]:p.m_TWMtx[2]:h:NdotL:NdotV:LdotH:light0viewDir"
-		if (g_DebugMode == 1) result = float3(p.m_TWMtx[2].x, 0, 0); // surface normal X
-		if (g_DebugMode == 2) result = float3(0, p.m_TWMtx[2].y, 0); // surface normal Y
-		if (g_DebugMode == 3) result = float3(0, 0, p.m_TWMtx[2].z); // surface normal Z
-		//if (g_DebugMode == 4) result = diffuseMap0.Sample(SamplerLinearWrap, p.m_Uv0).rgb;
-		if (g_DebugMode == 4) result = bColorLin.rgb;
-		if (g_DebugMode == 5) result = bColorLin.rgb;
-		if (g_DebugMode == 6) result = baseNormalMap.Sample(SamplerLinearWrap, p.m_Uv0).rgb;
-		if (g_DebugMode == 7) result = (baseNormalMap.Sample(SamplerLinearWrap, p.m_Uv0).xyz * 2.0f) - 1.0f;
-		if (g_DebugMode == 8)
-		{
-			if (useApproxToneMapping)
-				result = approxToneMapping(diffuse.rgb, bloomExp);
-			else
-				result = diffuse.rgb;
-		}
-		if (g_DebugMode == 9)
-		{
-			if (useApproxToneMapping)
-				result = approxToneMapping(specular.rgb, bloomExp);
-			else
-				result = specular.rgb;
-		} 
-		if (g_DebugMode == 10) result = p.m_TWMtx[0];
-		if (g_DebugMode == 11) result = p.m_TWMtx[1];
-		if (g_DebugMode == 12) result = p.m_TWMtx[2];
-		if (g_DebugMode == 13) result = normalize(lights[0].m_Direction.xyz + p.m_View.xyz); //H
-		if (g_DebugMode == 14) result = saturate(dot(n, lights[0].m_Direction.xyz));  //NdotL
-		if (g_DebugMode == 15) result = saturate(dot(n, p.m_View.xyz)); //NdotV
-		if (g_DebugMode == 16) result = saturate(dot(lights[0].m_Direction.xyz, H)); //LdotH
-		if (g_DebugMode == 17) result = lights[0].m_Direction.xyz;
+		if (g_DebugMode == 1) result = baseColorT.rgb;
+		if (g_DebugMode == 2) result = baseColorT.aaa;
+		if (g_DebugMode == 3) result = bColorLin.rgb;
+		if (g_DebugMode == 4) result = mColorLin.rgb;
+		if (g_DebugMode == 5) result = p.m_albedoRGBA.rgb;
+		if (g_DebugMode == 6) result = p.m_albedoRGBA.aaa;
+		if (g_DebugMode == 7) result = pbrMetalness.xxx;
+		if (g_DebugMode == 8) result = pbrRoughness.xxx;
+		if (g_DebugMode == 9) result = pbrAO.xxx;
+		if (g_DebugMode == 10) result = pbrCavity.xxx;
+		if (g_DebugMode == 11) result = baseNormalMap.Sample(SamplerAnisoWrap, p.m_Uv0).xyz;
+		if (g_DebugMode == 12) result = normalRaw.xyz;
+		if (g_DebugMode == 13) result = F0.xxx;
+		if (g_DebugMode == 14) result = bClum.xxx;
+		if (g_DebugMode == 15) result = Ctint.rgb;
+		if (g_DebugMode == 16) result = Cspec0.rgb;
+		if (g_DebugMode == 17) result = diffuse.rgb;
+		if (g_DebugMode == 18) result = specular.rgb;
+		if (g_DebugMode == 19) result = pbrRoughness.xxx;
+		if (g_DebugMode == 20) result = roughA.xxx;
+		if (g_DebugMode == 21) result = roughA2.xxx;
+		if (g_DebugMode == 22) result = roughnessBiasedA.xxx;
+		if (g_DebugMode == 23) result = roughnessBiasedA2.xxx;
+		if (g_DebugMode == 24) result = NdotV;
+		if (g_DebugMode == 25) result = (lerp(ambientGroundColor.rgb, ambientSkyColor.rgb, saturate((ambientUpAxis * 0.5) + 0.5))).rgb;
+		if (g_DebugMode == 26) result = ambDomeLinColor.rgb;
+		if (g_DebugMode == 27) result = diffEnvLin.rgb;
+		if (g_DebugMode == 28) result = specEnvLin.rgb;
+		if (g_DebugMode == 29) result = cSpecLin;
 	}
 #endif
 
@@ -793,96 +800,96 @@ move these functiosn into mayaUtilities.fxh
 call them where they are needed
 */
 #ifdef _MAYA_
-	void Peel(VsOutput v)
-	{
-		float currZ = abs(mul(v.m_WorldPosition, view).z);
+void Peel(VsOutput v)
+{
+	float currZ = abs(mul(v.m_WorldPosition, view).z);
 
-		float4 Pndc = mul(v.m_WorldPosition, viewPrj);
-			float2 UV = Pndc.xy / Pndc.w * float2(0.5f, -0.5f) + 0.5f;
-			float prevZ = transpDepthTexture.Sample(SamplerShadowDepth, UV).r;
-		float opaqZ = opaqueDepthTexture.Sample(SamplerShadowDepth, UV).r;
-		float bias = 0.00002f;
-		if (currZ < prevZ * (1.0f + bias) || currZ > opaqZ * (1.0f - bias))
-		{
-			discard;
-		}
+	float4 Pndc = mul(v.m_WorldPosition, viewPrj);
+	float2 UV = Pndc.xy / Pndc.w * float2(0.5f, -0.5f) + 0.5f;
+	float prevZ = transpDepthTexture.Sample(SamplerShadowDepth, UV).r;
+	float opaqZ = opaqueDepthTexture.Sample(SamplerShadowDepth, UV).r;
+	float bias = 0.00002f;
+	if (currZ < prevZ * (1.0f + bias) || currZ > opaqZ * (1.0f - bias))
+	{
+		discard;
 	}
+}
 
-	float4 LinearDepth(VsOutput v)
-	{
-		return abs(mul(v.m_WorldPosition, view).z);
-	}
+float4 LinearDepth(VsOutput v)
+{
+	return abs(mul(v.m_WorldPosition, view).z);
+}
 
-	float4 DepthComplexity(float opacity)
-	{
-		return opacity > 0.001f ? 1.0f : 0.0f;
-	}
+float4 DepthComplexity(float opacity)
+{
+	return opacity > 0.001f ? 1.0f : 0.0f;
+}
 
-	struct MultiOut2
-	{
-		float4 target0 : SV_Target0;
-		float4 target1 : SV_Target1;
-	};
+struct MultiOut2
+{
+	float4 target0 : SV_Target0;
+	float4 target1 : SV_Target1;
+};
 
-	MultiOut2 fTransparentPeel(VsOutput v, bool FrontFace : SV_IsFrontFace)
-	{
-		Peel(v);
+MultiOut2 fTransparentPeel(VsOutput v, bool FrontFace : SV_IsFrontFace)
+{
+	Peel(v);
 
-		MultiOut2 OUT;
-		OUT.target0 = pMain(v, FrontFace).m_Color;
-		OUT.target1 = LinearDepth(v);
-		return OUT;
-	}
+	MultiOut2 OUT;
+	OUT.target0 = pMain(v, FrontFace).m_Color;
+	OUT.target1 = LinearDepth(v);
+	return OUT;
+}
 
-	MultiOut2 fTransparentPeelAndAvg(VsOutput v, bool FrontFace : SV_IsFrontFace)
-	{
-		Peel(v);
+MultiOut2 fTransparentPeelAndAvg(VsOutput v, bool FrontFace : SV_IsFrontFace)
+{
+	Peel(v);
 
-		MultiOut2 OUT;
-		OUT.target0 = pMain(v, FrontFace).m_Color;
-		OUT.target1 = DepthComplexity(OUT.target0.w);
-		return OUT;
-	}
+	MultiOut2 OUT;
+	OUT.target0 = pMain(v, FrontFace).m_Color;
+	OUT.target1 = DepthComplexity(OUT.target0.w);
+	return OUT;
+}
 
-	MultiOut2 fTransparentWeightedAvg(VsOutput v, bool FrontFace : SV_IsFrontFace)
-	{
-		MultiOut2 OUT;
-		OUT.target0 = pMain(v, FrontFace).m_Color;
-		OUT.target1 = DepthComplexity(OUT.target0.w);
-		return OUT;
-	}
+MultiOut2 fTransparentWeightedAvg(VsOutput v, bool FrontFace : SV_IsFrontFace)
+{
+	MultiOut2 OUT;
+	OUT.target0 = pMain(v, FrontFace).m_Color;
+	OUT.target1 = DepthComplexity(OUT.target0.w);
+	return OUT;
+}
 
-	//------------------------------------
-	// wireframe pixel shader
-	//------------------------------------
-	float4 fwire(VsOutput v) : SV_Target
-	{
-		return float4(0, 0, 1, 1);
-	}
+//------------------------------------
+// wireframe pixel shader
+//------------------------------------
+float4 fwire(VsOutput v) : SV_Target
+{
+	return float4(0, 0, 1, 1);
+}
 
 
-	//------------------------------------
-	// pixel shader for shadow map generation
-	//------------------------------------
-	//float4 ShadowMapPS( float3 Pw, float4x4 shadowViewProj ) 
-	float4 ShadowMapPS(VsOutput v) : SV_Target
+//------------------------------------
+// pixel shader for shadow map generation
+//------------------------------------
+//float4 ShadowMapPS( float3 Pw, float4x4 shadowViewProj ) 
+float4 ShadowMapPS(VsOutput v) : SV_Target
+{
+	// clip as early as possible
+	if (useCutoutAlpha)
 	{
 		// clip as early as possible
-		if (useCutoutAlpha)
-		{
-			// clip as early as possible
-			//OpacityMaskClip(hasAlpha, SamplerLinearWrap, diffuseMap0, v.m_Uv0, opacityMaskBias);
-			OpacityClip(hasAlpha, opacity, opacityMaskBias);
-		}
-
-		float4 Pndc = mul(v.m_WorldPosition, viewPrj);
-
-		// divide Z and W component from clip space vertex position to get final depth per pixel
-		float retZ = Pndc.z / Pndc.w;
-
-		retZ += fwidth(retZ);
-		return retZ.xxxx;
+		//OpacityMaskClip(hasAlpha, SamplerLinearWrap, diffuseMap0, v.m_Uv0, opacityMaskBias);
+		OpacityClip(hasAlpha, opacity, opacityMaskBias);
 	}
+
+float4 Pndc = mul(v.m_WorldPosition, viewPrj);
+
+// divide Z and W component from clip space vertex position to get final depth per pixel
+float retZ = Pndc.z / Pndc.w;
+
+retZ += fwidth(retZ);
+return retZ.xxxx;
+}
 #endif
 
 //------------------------------------
@@ -911,28 +918,28 @@ call them where they are needed
 technique11 TessellationOFF
 <
 	bool overridesDrawState = false;	// we do not supply our own render state settings
-	int isTransparent = 3;
-	// which values trigger a transparecy test
-	string transparencyTest = "opacity < 1.0 || hasAlpha || hasVertexAlpha";
+int isTransparent = 3;
+// which values trigger a transparecy test
+string transparencyTest = "opacity < 1.0 || hasAlpha || hasVertexAlpha";
 
 #ifdef _MAYA_
-	// Tells Maya that the effect supports advanced transparency algorithm,
-	// otherwise Maya would render the associated objects simply by alpha
-	// blending on top of other objects supporting advanced transparency
-	// when the viewport transparency algorithm is set to depth-peeling or
-	// weighted-average.
-	bool supportsAdvancedTransparency = true;
+// Tells Maya that the effect supports advanced transparency algorithm,
+// otherwise Maya would render the associated objects simply by alpha
+// blending on top of other objects supporting advanced transparency
+// when the viewport transparency algorithm is set to depth-peeling or
+// weighted-average.
+bool supportsAdvancedTransparency = true;
 #endif
 >
 {
 	pass P0
-	< 
+		<
 		string drawContext = "colorPass";	// tell maya during what draw context this shader should be active, in this case 'Color'
-	>
+		>
 	{
-		#ifdef _MAYA_
-			SetBlendState(PMAlphaBlending, float4(0.0f, 0.0f, 0.0f, 0.0f), 0xFFFFFFFF);
-		#endif
+#ifdef _MAYA_
+		SetBlendState(PMAlphaBlending, float4(0.0f, 0.0f, 0.0f, 0.0f), 0xFFFFFFFF);
+#endif
 		SetVertexShader(CompileShader(vs_5_0, vsMain()));
 		SetPixelShader(CompileShader(ps_5_0, pMain()));
 	}
@@ -941,43 +948,43 @@ technique11 TessellationOFF
 
 #ifdef _MAYA_
 
-	pass pTransparentPeel
-	<
-	// Depth-peeling pass for depth-peeling transparency algorithm.
-	string drawContext = "transparentPeel";
-	>
-	{
-		SetVertexShader(CompileShader(vs_5_0, vsMain()));
-		SetPixelShader(CompileShader(ps_5_0, fTransparentPeel()));
-	}
+		pass pTransparentPeel
+			<
+			// Depth-peeling pass for depth-peeling transparency algorithm.
+			string drawContext = "transparentPeel";
+			>
+		{
+			SetVertexShader(CompileShader(vs_5_0, vsMain()));
+			SetPixelShader(CompileShader(ps_5_0, fTransparentPeel()));
+		}
 
-	pass pTransparentPeelAndAvg
-	<
-	// Weighted-average pass for depth-peeling transparency algorithm.
-	string drawContext = "transparentPeelAndAvg";
-	>
-	{
-		SetVertexShader(CompileShader(vs_5_0, vsMain()));
-		SetPixelShader(CompileShader(ps_5_0, fTransparentPeelAndAvg()));
-	}
+			pass pTransparentPeelAndAvg
+				<
+				// Weighted-average pass for depth-peeling transparency algorithm.
+				string drawContext = "transparentPeelAndAvg";
+				>
+			{
+				SetVertexShader(CompileShader(vs_5_0, vsMain()));
+				SetPixelShader(CompileShader(ps_5_0, fTransparentPeelAndAvg()));
+			}
 
-	pass pTransparentWeightedAvg
-	<
-	// Weighted-average algorithm. No peeling.
-	string drawContext = "transparentWeightedAvg";
-	>
-	{
-		SetVertexShader(CompileShader(vs_5_0, vsMain()));
-		SetPixelShader(CompileShader(ps_5_0, fTransparentWeightedAvg()));
-	}
+				pass pTransparentWeightedAvg
+					<
+					// Weighted-average algorithm. No peeling.
+					string drawContext = "transparentWeightedAvg";
+					>
+				{
+					SetVertexShader(CompileShader(vs_5_0, vsMain()));
+					SetPixelShader(CompileShader(ps_5_0, fTransparentWeightedAvg()));
+				}
 
-	pass pShadow
-	<
-		string drawContext = "shadowPass";	// shadow pass
-	>
-	{
-		SetVertexShader(CompileShader(vs_5_0, vsMain()));
-		SetPixelShader(CompileShader(ps_5_0, ShadowMapPS()));
-	}
+					pass pShadow
+						<
+						string drawContext = "shadowPass";	// shadow pass
+						>
+					{
+						SetVertexShader(CompileShader(vs_5_0, vsMain()));
+						SetPixelShader(CompileShader(ps_5_0, ShadowMapPS()));
+					}
 #endif
 }

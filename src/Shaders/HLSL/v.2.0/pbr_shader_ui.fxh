@@ -303,9 +303,9 @@
 	string UIGroup = HOG_GRP_MAT_PROPS;									\
 	string UIName = HOG_MATERIAL_ROUGHNESS;								\
 	string UIWidget = "Slider";											\
-	float UIMin = 0.00001;												\
+	float UIMin = 0.001;												\
 	float UISMax = 1.0;													\
-	float UIStep = 0.01;												\
+	float UIStep = 0.001;												\
 	int UIOrder = 157;													\
 > = 0.50f;
 
@@ -363,7 +363,15 @@
 > = 0.0f;
 
 /**
-@brief Macro to define 
+@brief Macro to define surface IOR value
+
+	Note:	IOR conversion into color space is:
+			F0 = pow(abs((1.0f - IOR) / (1.0f + IOR)), 2.0f);
+			pow(F0, 1/2.2333 ) * 255;
+
+Various Material IOR values
+https://pixelandpoly.com/ior.html
+
 */
 #define HOG_PROPERTY_MATERIAL_IOR	float materialIOR					\
 <																		\

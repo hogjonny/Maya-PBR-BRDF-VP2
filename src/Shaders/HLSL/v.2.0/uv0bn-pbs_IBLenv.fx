@@ -36,7 +36,7 @@ static const float cg_PI = 3.141592666f;
 #include "lighting.sif"
 #include "pbr.sif"
 #include "pbr_shader_ui.fxh"
-#include "approxToneMapping.fxh"
+#include "toneMapping.fxh"
 
 // Maya includes
 #include "mayaUtilities.fxh"
@@ -222,7 +222,7 @@ cbuffer UpdatePerObject : register(b1)
 	// useLightColorAsLightSpecularColor:	bool
 	HOG_PROPERTY_USE_LIGHT_COLOR_AS_LIGHT_SPECULAR_COLOR
 	// useApproxToneMapping:				bool
-	HOG_PROPERTY_USE_APPROX_TONE_MAPPING
+	//HOG_PROPERTY_USE_APPROX_TONE_MAPPING
 	// useGammaCorrectShader:				bool
 	HOG_PROPERTY_GAMMA_CORRECT_SHADER
 
@@ -250,6 +250,19 @@ int g_DebugMode
 	string UIFieldNames = "o.m_Color.rgb:baseColorT.rgb:baseColorT.aaa:bColorLin.rgb:mColorLin.rgb:p.m_albedoRGBA.rgb:p.m_albedoRGBA.aaa:pbrMetalness.xxx:pbrRoughness.xxx:pbrAO.xxx:pbrCavity.xxx:baseNormalMap.xyz:normalRaw.xyz:F0.xxx:bClum.xxx:Ctint.rgb:Cspec0.rgb:diffuse.rgb:specular.rgb:pbrRoughness.xxx:roughA.xxx:roughA2.xxx:roughnessBiasedA.xxx:roughnessBiasedA2.xxx:NdotV:ambDomeColor.rgb:ambDomeLinColor.rgb:diffEnvLin.rgb:specEnvLin.rgb:cSpecLin";
 	string UIName = "DEBUG VIEW";
 	int UIOrder = 0;
+> = 0;
+
+/**
+@Widget tone mapping pull down
+@brief provides a pull down menu, to select the tone mapping to be applied to the fragment shader
+*/
+int tonempappingType
+<
+	string UIGroup = HOG_GRP_ENGN_PREV;
+	string UIWidget = "Slider";
+	string UIFieldNames = "none:approx:linear:linearExp:reinhard:reinhardExp";
+	string UIName = HOG_TONEMAPPING_TYPE;
+	int UIOrder = 610;
 > = 0;
 
 //------------------------------------
@@ -744,13 +757,29 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	float3 result = o.m_Color.rgb * transperancy;
 
 	// do gamma correction in shader:
-	if (!MayaFullScreenGamma)
-		if (useGammaCorrectShader)
-			// this might need to be here with tonemapping?
-			result = pow(result, 1 / gammaCorrectionExponent);
+	//if (!MayaFullScreenGamma)
+		//if (useGammaCorrectShader)
+			//// this might need to be here with tonemapping?
+			//result = pow(result, 1 / gammaCorrectionExponent);
 
-	if (useApproxToneMapping)
-		result = approxToneMapping(result, bloomExp);
+#ifdef _MAYA_
+	// do gamma correction and tone mapping in shader:
+	// "none:approx:linear:linearExp:reinhard:reinhardExp"
+	if (!MayaFullScreenGamma)
+	{
+		if (useGammaCorrectShader)
+		{
+			if (tonempappingType > 0)
+			{
+				if (tonempappingType == 1) result = approxToneMapping(result, bloomExp).rgb;
+				if (tonempappingType == 2) result = linearTonemapping(result, gammaCorrectionExponent).rgb;
+				if (tonempappingType == 3) result = linearExpTonemapping(result, bloomExp, gammaCorrectionExponent).rgb;
+				if (tonempappingType == 4) result = reinhard(result, gammaCorrectionExponent).rgb;
+				if (tonempappingType == 5) result = reinhardExp(result, bloomExp, gammaCorrectionExponent).rgb;
+			}
+		}
+	}
+#endif
 
 // Debug views
 //"o.m_Color.rgb:baseColorT.rgb:baseColorT.aaa:bColorLin.rgb:mColorLin.rgb:p.m_albedoRGBA.rgb:p.m_albedoRGBA.aaa:pbrMetalness.xxx:pbrRoughness.xxx:pbrAO.xxx:pbrCavity.xxx:baseNormalMap.xyz:normalRaw.xyz:F0.xxx:bClum.xxx:Ctint.rgb:Cspec0.rgb:diffuse.rgb:specular.rgb:pbrRoughness.xxx:roughA.xxx:roughA2.xxx:roughnessBiasedA.xxx:roughnessBiasedA2.xxx:NdotV:ambDomeColor.rgb:ambDomeLinColor.rgb:diffEnvLin.rgb:specEnvLin.rgb:cSpecLin"
@@ -790,8 +819,7 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 #endif
 
 	// REAL return out...
-	o.m_Color = float4(result.xyz, transperancy);
-
+	o.m_Color = float4(result.rgb, transperancy);
 	return o;
 }
 

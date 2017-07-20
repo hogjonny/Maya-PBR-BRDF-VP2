@@ -9,7 +9,7 @@ What's new?
 - in test I used IBL's generated with: https://github.com/derkreature/IBLBaker
 - and the shader ball is from: https://github.com/derkreature/ShaderBall
 
-![alt tag](https://github.com/HogJonnyMaxPlay/Maya-PBR-BRDF-VP2/blob/master/images/moreBetterFeatures.png)
+![alt tag](https://github.com/HogJonnyMaxPlay/Maya-PBR-BRDF-VP2/blob/master/images/latest_screenshot.png)
 
 I have to give thanks ... there is a ton of useful information out on the web, all you have to do is start googling topics like PBR; you will find a myriad of papers, forum posts, tutorials, personal projects and the likes.  I did not create or invent anything new here (I used a variety of methods and made whatever tweaks and changes made my implementation work.)
 

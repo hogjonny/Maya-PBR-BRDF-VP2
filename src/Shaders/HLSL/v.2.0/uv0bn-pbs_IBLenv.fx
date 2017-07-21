@@ -90,12 +90,14 @@ HOG_PROPERTY_VERTEX_ELEMENT_TANGENT
 // string UIGroup = "Material Maps"; UI 050+
 // from mgdsShader_pbr.fxh macros
 // This version we are not going to use any texture, just properties
-// baseColorMap
+// baseColorMap:			Texture2D
 HOG_MAP_BASECOLOR
-// baseNormalMap
+// baseNormalMap:			Texture2D
 HOG_MAP_BASENORMAL
-// pbrMasksMap
+// pbrMasksMap:				Texture2D
 HOG_MAP_PBRMASKS
+//filmLutMap:				Texture2D
+HOG_MAP_FILMLUT
 
 // These are PBR IBL env related texture inputs
 // Plus additional hemispherical ambient properties
@@ -260,7 +262,7 @@ int tonempappingType
 <
 	string UIGroup = HOG_GRP_ENGN_PREV;
 	string UIWidget = "Slider";
-	string UIFieldNames = "none:approx:linear:linearExp:reinhard:reinhardExp";
+	string UIFieldNames = "none:approx:linear:linearExp:reinhard:reinhardExp:HaarmPeterCurve:HaarmPeterCurveExp:uncharted2FilmicTonemapping:uncharted2FilmicTonemappingExp";
 	string UIName = HOG_TONEMAPPING_TYPE;
 	int UIOrder = 610;
 > = 0;
@@ -764,7 +766,7 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 
 #ifdef _MAYA_
 	// do gamma correction and tone mapping in shader:
-	// "none:approx:linear:linearExp:reinhard:reinhardExp"
+	// "none:approx:linear:linearExp:reinhard:reinhardExp:HaarmPeterCurve:HaarmPeterCurveExp:uncharted2FilmicTonemapping:uncharted2FilmicTonemappingExp"
 	if (!MayaFullScreenGamma)
 	{
 		if (useGammaCorrectShader)
@@ -776,6 +778,12 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 				if (tonempappingType == 3) result = linearExpTonemapping(result, bloomExp, gammaCorrectionExponent).rgb;
 				if (tonempappingType == 4) result = reinhard(result, gammaCorrectionExponent).rgb;
 				if (tonempappingType == 5) result = reinhardExp(result, bloomExp, gammaCorrectionExponent).rgb;
+				if (tonempappingType == 6) result = HaarmPeterCurve(result, filmLutMap);
+				if (tonempappingType == 7) result = HaarmPeterCurveExp(result, filmLutMap, bloomExp);
+				if (tonempappingType == 8) result = JimHejlRichardBurgessDawson(result);
+				if (tonempappingType == 9) result = JimHejlRichardBurgessDawsonExp(result, bloomExp);
+				if (tonempappingType == 10) result = uncharted2FilmicTonemapping(result, gammaCorrectionExponent);
+				if (tonempappingType == 11) result = uncharted2FilmicTonemappingExp(result, gammaCorrectionExponent, bloomExp);
 			}
 		}
 	}

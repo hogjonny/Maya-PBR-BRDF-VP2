@@ -132,6 +132,7 @@ If a property name needs to be modified, it would be changed here without needin
 #define HOG_USE_LIGHT_COLOR_AS_LIGHT_SPECULAR_COLOR	"Use LightColor as lightSpecularColor [*]"
 #define HOG_USE_APPROX_TONE_MAPPING		"Use Approx Tone Mapping [*]"
 #define HOG_GAMMA_CORRECT_SHADER		"Use Gamma Correct Shader [*]"
+#define HOG_FILMLUT						"Film LUT"
 
 #define HOG_CUBE_SRC					"Cubemap"
 
@@ -149,6 +150,8 @@ If a property name needs to be modified, it would be changed here without needin
 #define HOG_SPECRADIANCE_MAP			"ENV Spec Rad [LatLong]"
 #define HOG_IRRADIANCE_MAP				"Env Irrad [LatLong]"
 #define HOG_BDRFLUT_MAP					"BDRF LUT"
+
+#define HOG_TONEMAPPING_TYPE			"Tonemapping Type"
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #endif // #ifndef _PROPERTY_NAMES_

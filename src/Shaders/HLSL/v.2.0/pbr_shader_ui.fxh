@@ -711,4 +711,19 @@ string UIName = HOG_GAMMA_CORRECT_SHADER;								\
 int UIOrder = 609;														\
 > = true;	
 
+/**
+@brief A Film LUT for HaarmPeterCurve()
+*/
+#define HOG_MAP_FILMLUT Texture2D filmLutMap				\
+<															\
+	string UIGroup = HOG_GRP_ENGN_PREV;						\
+	string ResourceName = "";								\
+	string UIWidget = "FilePicker";							\
+	string UIName = HOG_FILMLUT;							\
+	string ResourceType = "2D";								\
+	int mipmaplevels = 0;									\
+	int UIOrder = 610;										\
+	int UVEditorOrder = 1;									\
+>;
+
 #endif // #ifndef _SHADER_PBR_FXH_

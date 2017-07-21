@@ -4,6 +4,10 @@
 @reference, modified from: http://filmicworlds.com/blog/filmic-tonemapping-operators/
 */
 
+#include "samplers.fxh"
+// SamplerState SamplerAnisoClampUV
+SAMPLERSTATEANISOCLAMP_UV
+
 /**
 @brief Function for approximating Tonemapping Implementation in Maya
 @param[in] hdrColor - the output color prior to tone mapping
@@ -66,7 +70,7 @@ float3 reinhardExp(float3 hdrColor, float bloomExp, float gammaExp)
 /**
 @ brief TO Do: document
 */
-float3 HaarmPeterCurve(float3 hdrColor, float3 filmLut)
+float3 HaarmPeterCurve(float3 hdrColor, Texture2D filmLut)
 {
    hdrColor *= 16.0f;  // Hardcoded Exposure Adjustment
 
@@ -84,9 +88,9 @@ float3 HaarmPeterCurve(float3 hdrColor, float3 filmLut)
       
    //  apply response lookup and color grading for target display
    float3 retColor;
-   retColor.r = tex2D( filmLut, float2( lerp( padding, 1.0f - padding, logColor.r), 0.5f) ).r;
-   retColor.g = tex2D( filmLut, float2( lerp( padding, 1.0f - padding, logColor.g), 0.5f) ).r;
-   retColor.b = tex2D( filmLut, float2( lerp( padding, 1.0f - padding, logColor.b), 0.5f) ).r;
+   retColor.r = filmLut.Sample(SamplerAnisoClampUV, float2( lerp( padding, 1.0f - padding, logColor.r), 0.5f) ).r;
+   retColor.g = filmLut.Sample(SamplerAnisoClampUV, float2( lerp( padding, 1.0f - padding, logColor.g), 0.5f) ).r;
+   retColor.b = filmLut.Sample(SamplerAnisoClampUV, float2( lerp( padding, 1.0f - padding, logColor.b), 0.5f) ).r;
 
    return retColor.rgb;
 }
@@ -94,9 +98,9 @@ float3 HaarmPeterCurve(float3 hdrColor, float3 filmLut)
 /**
 @ brief TO Do: document
 */
-float3 HaarmPeterCurveExp(float3 hdrColor, float3 filmLut, float bloomExp)
+float3 HaarmPeterCurveExp(float3 hdrColor, Texture2D filmLut, float bloomExp)
 {
-   texColor *= bloomExp;  // Hardcoded Exposure Adjustment
+   hdrColor *= bloomExp;  // Hardcoded Exposure Adjustment
 
    float filmLutWidth = 256;
    float padding = 0.5 / filmLutWidth;
@@ -107,14 +111,14 @@ float3 HaarmPeterCurveExp(float3 hdrColor, float3 filmLut, float bloomExp)
    float logGamma = 0.45f;
       
    float3 logColor;
-   logColor.rgb = ( log10 (0.4f * texColor.rgb / linReference ) / ld * logGamma + logReference) / 1023.f;
-   logColor.rgb = saturate(LogColor.rgb);
+   logColor.rgb = ( log10 (0.4f * hdrColor.rgb / linReference ) / ld * logGamma + logReference) / 1023.f;
+   logColor.rgb = saturate(logColor.rgb);
       
    //  apply response lookup and color grading for target display
    float3 retColor;
-   retColor.r = tex2D( filmLut, float2( lerp( Padding, 1.0f - padding, logColor.r), 0.5f) ).r;
-   retColor.g = tex2D( filmLut, float2( lerp( Padding, 1.0f - padding, logColor.g), 0.5f) ).r;
-   retColor.b = tex2D( filmLut, float2( lerp( Padding, 1.0f - padding, logColor.b), 0.5f) ).r;
+   retColor.r = filmLut.Sample(SamplerAnisoClampUV, float2( lerp( padding, 1.0f - padding, logColor.r), 0.5f) ).r;
+   retColor.g = filmLut.Sample(SamplerAnisoClampUV, float2( lerp( padding, 1.0f - padding, logColor.g), 0.5f) ).r;
+   retColor.b = filmLut.Sample(SamplerAnisoClampUV, float2( lerp( padding, 1.0f - padding, logColor.b), 0.5f) ).r;
 
    return retColor.rgb;
 }
@@ -138,5 +142,49 @@ float3 JimHejlRichardBurgessDawsonExp(float3 hdrColor, float bloomExp)
    hdrColor *= bloomExp;
    float3 x = max( 0.0f, hdrColor.rgb - 0.004f );
    float3 retColor = ( x * (6.2f * x + 0.5f ) ) / ( x * ( 6.2f * x + 1.7f ) + 0.06f );
+   return retColor.rgb;
+}
+
+/**
+@ brief TO Do: document
+*/
+float A = 0.15f;
+float B = 0.50f;
+float C = 0.10f;
+float D = 0.20f;
+float E = 0.02f;
+float F = 0.30f;
+float W = 11.2f;
+
+float3 Uncharted2Tonemap(float3 x)
+{
+   return ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;
+}
+
+float3 uncharted2FilmicTonemapping(float3 hdrColor, float gammaExp)
+{
+   hdrColor *= 16;  // Hardcoded Exposure Adjustment
+
+   float ExposureBias = 2.0f;
+   float3 curr = Uncharted2Tonemap( ExposureBias * hdrColor);
+
+   float3 whiteScale = 1.0f / Uncharted2Tonemap(W);
+   float3 color = curr * whiteScale;
+      
+   float3 retColor = pow(color, 1 / gammaExp);
+   return retColor.rgb;
+}
+
+float3 uncharted2FilmicTonemappingExp(float3 hdrColor, float gammaExp, float bloomExp)
+{
+   hdrColor *= bloomExp;
+
+   float ExposureBias = 2.0f;
+   float3 curr = Uncharted2Tonemap( ExposureBias * hdrColor);
+
+   float3 whiteScale = 1.0f / Uncharted2Tonemap(W);
+   float3 color = curr * whiteScale;
+      
+   float3 retColor = pow(color, 1 / gammaExp);
    return retColor.rgb;
 }

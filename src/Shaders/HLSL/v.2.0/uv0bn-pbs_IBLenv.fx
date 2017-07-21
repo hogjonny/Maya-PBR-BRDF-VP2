@@ -69,7 +69,7 @@ SAMPLERCUBEMAP
 // SamplerBrdfLUT
 SAMPLERBRDFLUT
 
-// macro to include MaxPlay Vertex Elements
+// macro to include Vertex Elements
 // from HOG_shader_ui.fxh macros
 // vertexElementPosition
 HOG_PROPERTY_VERTEX_ELEMENT_POSITION
@@ -88,8 +88,7 @@ HOG_PROPERTY_VERTEX_ELEMENT_TANGENT
 // Textures
 //------------------------------------
 // string UIGroup = "Material Maps"; UI 050+
-// from mgdsShader_pbr.fxh macros
-// This version we are not going to use any texture, just properties
+// from pbr.fxh macros
 // baseColorMap:			Texture2D
 HOG_MAP_BASECOLOR
 // baseNormalMap:			Texture2D
@@ -325,9 +324,11 @@ VsOutput vsMain(vsInput v)
 	OUT.m_WorldPosition = mul(float4(v.m_Position, 1), World);
 
 	if (useVertexC0_RGBA)
+	{
 		// Interpolate and ouput vertex color 0
 		OUT.m_albedoRGBA.rgb = v.m_AlbedoRGBA.rgb;
-	OUT.m_albedoRGBA.w = v.m_AlbedoRGBA.w;
+		OUT.m_albedoRGBA.w = v.m_AlbedoRGBA.w;
+	}
 
 	// setup Gamma Corrention
 	float gammaCexp = linearSpaceLighting ? gammaCorrectionValue : 1.0;
@@ -336,9 +337,11 @@ VsOutput vsMain(vsInput v)
 	OUT.m_albedoRGBA.rgb = linearSpaceLighting ? pow(v.m_AlbedoRGBA.rgb, gammaCexp) : OUT.m_albedoRGBA.rgb;
 
 	if (useVertexC1_AO)
+	{
 		// Interpolate and ouput vertex color 1
 		OUT.m_vertexAO.rgb = v.m_vertexAO.rgb;
-	OUT.m_vertexAO.w = v.m_vertexAO.w;
+		OUT.m_vertexAO.w = v.m_vertexAO.w;
+	}
 
 	// Pass through texture coordinates
 	// flip Y for Maya

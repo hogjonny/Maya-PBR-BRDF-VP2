@@ -51,16 +51,136 @@
 	int UVEditorOrder = 1;									\
 >;
 
+// Roughness Map
+#define HOG_MAP_ROUGHNESS Texture2D roughnessMap			\
+<															\
+	string UIGroup = HOG_GRP_MATERIAL_MAPS;					\
+	string ResourceName = "";								\
+	string UIWidget = "FilePicker";							\
+	string UIName = HOG_ROUGHNESS_MAP;						\
+	string ResourceType = "2D";								\
+	int mipmaplevels = NumberOfMipMaps;						\
+	int UIOrder = 102;										\
+	int UVEditorOrder = 1;									\
+>;
+
 /**
-@brief The NormalMap used to peturb normals for shading calculations
+@breif Metalness Map
+*/
+#define HOG_MAP_METALNESS Texture2D metalnessMap			\
+<															\
+	string UIGroup = HOG_GRP_MATERIAL_MAPS;					\
+	string ResourceName = "";								\
+	string UIWidget = "FilePicker";							\
+	string UIName = HOG_METALNESS_MAP;						\
+	string ResourceType = "2D";								\
+	int mipmaplevels = NumberOfMipMaps;						\
+	int UIOrder = 103;										\
+	int UVEditorOrder = 1;									\
+>;
+
+/**
+@breif Specular F0 Map
+Note:	IOR conversion into color space is:
+		F0 = pow(abs((1.0f - IOR) / (1.0f + IOR)), 2.0f);
+		pow(F0, 1/2.2333 ) * 255;
+*/
+#define HOG_MAP_SPECF0 Texture2D specularF0Map				\
+<															\
+	string UIGroup = HOG_GRP_MATERIAL_MAPS;					\
+	string ResourceName = "";								\
+	string UIWidget = "FilePicker";							\
+	string UIName = HOG_SPECF0_MAP;							\
+	string ResourceType = "2D";								\
+	int mipmaplevels = NumberOfMipMaps;						\
+	int UIOrder = 104;										\
+	int UVEditorOrder = 1;									\
+>;
+
+// Specular Map
+#define HOG_MAP_SPECULAR Texture2D specularMap				\
+<															\
+	string UIGroup = HOG_GRP_MATERIAL_MAPS;					\
+	string ResourceName = "";								\
+	string UIWidget = "FilePicker";							\
+	string UIName = HOG_SPECULAR_MAP;						\
+	string ResourceType = "2D";								\
+	int mipmaplevels = NumberOfMipMaps;						\
+	int UIOrder = 105;										\
+	int UVEditorOrder = 1;									\
+>;
+
+// Height Map
+#define HOG_MAP_HEIGHT Texture2D heightMap					\
+<															\
+	string UIGroup = HOG_GRP_MATERIAL_MAPS;					\
+	string ResourceName = "";								\
+	string UIWidget = "FilePicker";							\
+	string UIName = HOG_HEIGHT_MAP;							\
+	string ResourceType = "2D";								\
+	int mipmaplevels = NumberOfMipMaps;						\
+	int UIOrder = 106;										\
+	int UVEditorOrder = 1;									\
+>;
+
+// Surface Ambient Occlusion AO Map
+#define HOG_MAP_AMBOCC Texture2D ambOccMap					\
+<															\
+	string UIGroup = HOG_GRP_MATERIAL_MAPS;					\
+	string ResourceName = "";								\
+	string UIWidget = "FilePicker";							\
+	string UIName = HOG_AMBOCC_MAP;							\
+	string ResourceType = "2D";								\
+	int mipmaplevels = NumberOfMipMaps;						\
+	int UIOrder = 107;										\
+	int UVEditorOrder = 1;									\
+>;
+
+// Cavity Map
+#define HOG_MAP_CAVITY Texture2D cavityMap					\
+<															\
+	string UIGroup = HOG_GRP_MATERIAL_MAPS;					\
+	string ResourceName = "";								\
+	string UIWidget = "FilePicker";							\
+	string UIName = HOG_CAVITY_MAP;							\
+	string ResourceType = "2D";								\
+	int mipmaplevels = NumberOfMipMaps;						\
+	int UIOrder = 108;										\
+	int UVEditorOrder = 1;									\
+>;
+
+// Emissive Map
+#define HOG_MAP_EMISSIVE Texture2D emissiveMap				\
+<															\
+	string UIGroup = HOG_GRP_MATERIAL_MAPS;					\
+	string ResourceName = "";								\
+	string UIWidget = "FilePicker";							\
+	string UIName = HOG_EMISSIVE_MAP;						\
+	string ResourceType = "2D";								\
+	int mipmaplevels = NumberOfMipMaps;						\
+	int UIOrder = 109;										\
+	int UVEditorOrder = 1;									\
+>;
+
+// Anisotropic Map(s?)
+#define HOG_MAP_ANISOTROPIC Texture2D anisotropicMap		\
+<															\
+	string UIGroup = HOG_GRP_MATERIAL_MAPS;					\
+	string ResourceName = "";								\
+	string UIWidget = "FilePicker";							\
+	string UIName = HOG_ANISOTROPIC_MAP;					\
+	string ResourceType = "2D";								\
+	int mipmaplevels = NumberOfMipMaps;						\
+	int UIOrder = 110;										\
+	int UVEditorOrder = 1;									\
+>;
+
+/**
+@brief packed masks for surface PBR calulations
 	R = Metalness (might have little or very broad change)
 	G = Roughness (most important in pbr, that's why it's in green)
 	B = AO        (this might really suck when compressed)
 	A = Cavity    (likely finest grain lines, needs good compression)
-
-	Note:	IOR conversion into color space is:
-			F0 = pow(abs((1.0f - IOR) / (1.0f + IOR)), 2.0f);
-			pow(F0, 1/2.2333 ) * 255;
 */
 #define HOG_MAP_PBRMASKS Texture2D pbrMasksMap				\
 <															\
@@ -73,7 +193,7 @@
 	So user can pre-calculate and re-normalize mip maps		\
 	for normal maps in .dds */								\
 	int mipmaplevels = 0;									\
-	int UIOrder = 102;										\
+	int UIOrder = 111;										\
 	int UVEditorOrder = 1;									\
 >;
 
@@ -82,75 +202,75 @@
 // ---------------------------------------------
 //#define HOG_GRP_ENV_LIGHTING "Enrironment Lighting"	
 
-#define HOG_ENV_BOOL bool useEnvMaps											\
-<																				\
-	string UIGroup = HOG_GRP_ENV_LIGHTING;										\
-	string UIName = HOG_SCENE_USE_ENV;											\
-	int UIOrder = 125;															\
+#define HOG_ENV_BOOL bool useEnvMaps						\
+<															\
+	string UIGroup = HOG_GRP_ENV_LIGHTING;					\
+	string UIName = HOG_SCENE_USE_ENV;						\
+	int UIOrder = 125;										\
 > = true;
 
-#define HOG_ENVMAP_TYPE int envMapType											\
-<																				\
-	string UIGroup = HOG_GRP_ENV_LIGHTING;										\
-	string UIWidget = "Slider";													\
-	string UIFieldNames = "cubemap:LatLong[2D]";								\
-	string UIName = HOG_SCENE_ENV_TYPE;											\
-	int UIOrder = 126;															\
+#define HOG_ENVMAP_TYPE int envMapType						\
+<															\
+	string UIGroup = HOG_GRP_ENV_LIGHTING;					\
+	string UIWidget = "Slider";								\
+	string UIFieldNames = "cubemap:LatLong[2D]";			\
+	string UIName = HOG_SCENE_ENV_TYPE;						\
+	int UIOrder = 126;										\
 > = 0;
 
-#define HOG_MAP_BRDF Texture2D brdfTextureMap									\
-<																				\
-    string UIGroup = HOG_GRP_ENV_LIGHTING;										\
-    string ResourceName = "";													\
-    string UIWidget = "FilePicker";												\
-    string UIName = HOG_SCENE_BRDF;												\
-    string ResourceType = "2D";													\
-    int mipmaplevels = 0;														\
-    int UIOrder = 127;															\
+#define HOG_MAP_BRDF Texture2D brdfTextureMap				\
+<															\
+    string UIGroup = HOG_GRP_ENV_LIGHTING;					\
+    string ResourceName = "";								\
+    string UIWidget = "FilePicker";							\
+    string UIName = HOG_SCENE_BRDF;							\
+    string ResourceType = "2D";								\
+    int mipmaplevels = 0;									\
+    int UIOrder = 127;										\
 >;
 
-#define HOG_CUBEMAP_IBLDIFF TextureCube diffuseEnvTextureCube : environment		\
-<																				\
-    string UIGroup = HOG_GRP_ENV_LIGHTING;										\
-    string ResourceName = "";													\
-    string UIWidget = "FilePicker";												\
-    string UIName = HOG_SCENE_CUBE_IBLDIFF;										\
-    string ResourceType = "Cube";												\
-    int mipmaplevels = 0;														\
-    int UIOrder = 128;															\
+#define HOG_CUBEMAP_IBLDIFF TextureCube diffuseEnvTextureCube : environment	\
+<															\
+    string UIGroup = HOG_GRP_ENV_LIGHTING;					\
+    string ResourceName = "";								\
+    string UIWidget = "FilePicker";							\
+    string UIName = HOG_SCENE_CUBE_IBLDIFF;					\
+    string ResourceType = "Cube";							\
+    int mipmaplevels = 0;									\
+    int UIOrder = 128;										\
 >;
 
-#define HOG_CUBEMAP_IBLSPEC TextureCube specularEnvTextureCube : environment	\
-<																				\
-    string UIGroup = HOG_GRP_ENV_LIGHTING;										\
-    string ResourceName = "";													\
-    string UIWidget = "FilePicker";												\
-    string UIName = HOG_SCENE_CUBE_IBLSPEC;										\
-    string ResourceType = "Cube";												\
-    int mipmaplevels = 0;														\
-    int UIOrder = 129;															\
+#define HOG_CUBEMAP_IBLSPEC TextureCube specularEnvTextureCube : environment \
+<															\
+    string UIGroup = HOG_GRP_ENV_LIGHTING;					\
+    string ResourceName = "";								\
+    string UIWidget = "FilePicker";							\
+    string UIName = HOG_SCENE_CUBE_IBLSPEC;					\
+    string ResourceType = "Cube";							\
+    int mipmaplevels = 0;									\
+    int UIOrder = 129;										\
 >;
 
 #define HOG_LATLONG_IBLDIFF Texture2D diffuseEnvTextureLatlong : environment	\
-<																				\
-    string UIGroup = HOG_GRP_ENV_LIGHTING;										\
-    string ResourceName = "";													\
-    string UIWidget = "FilePicker";												\
-    string UIName = HOG_SCENE_LATLONG_IBLDIFF;									\
-    string ResourceType = "Cube";												\
-    int mipmaplevels = 0;														\
-    int UIOrder = 130;															\
+<															\
+    string UIGroup = HOG_GRP_ENV_LIGHTING;					\
+    string ResourceName = "";								\
+    string UIWidget = "FilePicker";							\
+    string UIName = HOG_SCENE_LATLONG_IBLDIFF;				\
+    string ResourceType = "Cube";							\
+    int mipmaplevels = 0;									\
+    int UIOrder = 130;										\
 >;
 
 #define HOG_LATLONG_IBLSPEC Texture2D specularEnvTextureLatlong : environment	\
-<																				\
-    string UIGroup = HOG_GRP_ENV_LIGHTING;										\
-    string ResourceName = "";													\
-    string UIWidget = "FilePicker";												\
-    string UIName = HOG_SCENE_LATLONG_IBLSPEC;									\
-    string ResourceType = "Cube";												\
-    int mipmaplevels = 0;														\
-    int UIOrder = 131;															\
+<															\
+    string UIGroup = HOG_GRP_ENV_LIGHTING;					\
+    string ResourceName = "";								\
+    string UIWidget = "FilePicker";							\
+    string UIName = HOG_SCENE_LATLONG_IBLSPEC;				\
+    string ResourceType = "Cube";							\
+    int mipmaplevels = 0;									\
+    int UIOrder = 131;										\
 >;
 
 #define HOG_ENVLIGHTING_EXP float envLightingExp	\
@@ -296,6 +416,20 @@
 > = { 0.6f, 0.6f, 0.6f};
 
 /**
+@brief Macro to define the anisotropicness for the surface
+*/
+#define HOG_PROPERTY_MATERIAL_ANISOTROPIC float materialAnisotropic		\
+<																		\
+	string UIGroup = HOG_GRP_MAT_PROPS;									\
+	string UIName = HOG_MATERIAL_ANISOTROPIC;							\
+	string UIWidget = "Slider";											\
+	float UIMin = 0.0;													\
+	float UISMax = 1.0;													\
+	float UIStep = 0.001;												\
+	int UIOrder = 157;													\
+> = 0.00f;
+
+/**
 @brief Macro to define the roughness for the surface
 */
 #define HOG_PROPERTY_MATERIAL_ROUGHNESS float materialRoughness			\
@@ -304,9 +438,9 @@
 	string UIName = HOG_MATERIAL_ROUGHNESS;								\
 	string UIWidget = "Slider";											\
 	float UIMin = 0.001;												\
-	float UISMax = 1.0;													\
+	float UIMax = 0.999;												\
 	float UIStep = 0.001;												\
-	int UIOrder = 157;													\
+	int UIOrder = 158;													\
 > = 0.50f;
 
 /**
@@ -320,7 +454,91 @@
 	float UIMin = 0.00;													\
 	float UIMax = 1.0;													\
 	float UIStep = 0.01;												\
-	int UIOrder = 158;													\
+	int UIOrder = 159;													\
+> = 0.00f;
+
+/**
+@brief Macro to define the specularness of the surface
+*/
+#define HOG_PROPERTY_MATERIAL_SPECULAR float materialSpecular			\
+<																		\
+	string UIGroup = HOG_GRP_MAT_PROPS;									\
+	string UIName = HOG_MATERIAL_SPECULAR;								\
+	string UIWidget = "Slider";											\
+	float UIMin = 0.00;													\
+	float UISoftMax = 1.0;												\
+	float UIStep = 0.01;												\
+	int UIOrder = 160;													\
+> = 1.00f;
+
+/**
+@brief Macro to define 
+*/
+#define HOG_PROPERTY_MATERIAL_SPECTINT	float materialSpecTint			\
+<																		\
+	string UIGroup = HOG_GRP_MAT_PROPS;									\
+	string UIName = HOG_MATERIAL_SPECTINT;								\
+	string UIWidget = "Slider";											\
+	float UIMin = 0.0;													\
+	float UIMax = 1.0;													\
+	float UIStep = 0.01;												\
+	int UIOrder = 161;													\
+> = 0.0f;
+
+/**
+@brief Macro to define the sheen amount of the surface
+*/
+#define HOG_PROPERTY_MATERIAL_SHEEN float materialSheen					\
+<																		\
+	string UIGroup = HOG_GRP_MAT_PROPS;									\
+	string UIName = HOG_MATERIAL_SHEEN;									\
+	string UIWidget = "Slider";											\
+	float UIMin = 0.00;													\
+	float UISoftMax = 1.0;												\
+	float UIStep = 0.01;												\
+	int UIOrder = 162;													\
+> = 0.00f;
+
+/**
+@brief Macro to define the sheen tint amount of the surface
+*/
+#define HOG_PROPERTY_MATERIAL_SHEENTINT float materialSheentint			\
+<																		\
+	string UIGroup = HOG_GRP_MAT_PROPS;									\
+	string UIName = HOG_MATERIAL_SHEENTINT;								\
+	string UIWidget = "Slider";											\
+	float UIMin = 0.00;													\
+	float UISoftMax = 1.0;												\
+	float UIStep = 0.01;												\
+	int UIOrder = 163;													\
+> = 0.00f;
+
+/**
+@brief Macro to define the clearcoat amount of the surface
+*/
+#define HOG_PROPERTY_MATERIAL_CLEARCOAT float materialClearcoat			\
+<																		\
+	string UIGroup = HOG_GRP_MAT_PROPS;									\
+	string UIName = HOG_MATERIAL_CLEARCOAT;								\
+	string UIWidget = "Slider";											\
+	float UIMin = 0.00;													\
+	float UISoftMax = 1.0;												\
+	float UIStep = 0.01;												\
+	int UIOrder = 164;													\
+> = 0.00f;
+
+/**
+@brief Macro to define the clearcoat tint amount of the surface
+*/
+#define HOG_PROPERTY_MATERIAL_CLEARCOATGLOSS float materialClearcoatGloss	\
+<																			\
+	string UIGroup = HOG_GRP_MAT_PROPS;										\
+	string UIName = HOG_MATERIAL_CLEARCOATGLOSS;							\
+	string UIWidget = "Slider";												\
+	float UIMin = 0.00;														\
+	float UISoftMax = 1.0;													\
+	float UIStep = 0.01;													\
+	int UIOrder = 165;														\
 > = 0.00f;
 
 /**
@@ -331,7 +549,7 @@
 	string UIGroup = HOG_GRP_MAT_PROPS;									\
 	string UIName = HOG_MATERIAL_EMISSIVE;								\
 	string UIWidget = "ColorPicker";									\
-	int UIOrder = 159;													\
+	int UIOrder = 166;													\
 > = {0.0f, 0.0f, 0.0f};
 
 /**
@@ -345,22 +563,8 @@
 	float UIMin = 0.00;														\
 	float UISoftMax = 3.0;													\
 	float UIStep = 0.01;													\
-	int UIOrder = 160;														\
+	int UIOrder = 167;														\
 > = 0.00f;
-
-/**
-@brief Macro to define 
-*/
-#define HOG_PROPERTY_MATERIAL_SPECTINT	float materialSpecTint			\
-<																		\
-	string UIGroup = HOG_GRP_MAT_PROPS;									\
-	string UIName = HOG_MATERIAL_SPECTINT;								\
-	string UIWidget = "Slider";											\
-	float UIMin = 0.0;													\
-	float UISoftMax = 1.0;												\
-	float UIStep = 0.01;												\
-	int UIOrder = 161;													\
-> = 0.0f;
 
 /**
 @brief Macro to define surface IOR value
@@ -381,7 +585,7 @@ https://pixelandpoly.com/ior.html
 	float UISoftMin = 1.0;												\
 	float UISoftMax = 3.0;												\
 	float UIStep = 0.01;												\
-	int UIOrder = 162;													\
+	int UIOrder = 168;													\
 > = 1.45f;  //default to plastic
 
 /**
@@ -395,7 +599,7 @@ https://pixelandpoly.com/ior.html
 	float UISoftMin = 0.020;												\
 	float UISoftMax = 1.0;													\
 	float UIStep = 0.01;													\
-	int UIOrder = 163;														\
+	int UIOrder = 169;														\
 > = 1.00f;
 
 /**
@@ -405,7 +609,7 @@ https://pixelandpoly.com/ior.html
 <																			\
 	string UIGroup = HOG_GRP_MAT_PROPS;										\
 	string UIName = HOG_USE_VERTEX_C0_RGBA;									\
-	int UIOrder = 164;														\
+	int UIOrder = 170;														\
 > = false;
 
 /**
@@ -415,7 +619,7 @@ https://pixelandpoly.com/ior.html
 <																		\
 	string UIGroup = HOG_GRP_MAT_PROPS;									\
 	string UIName = HOG_HAS_VERTEX_ALPHA;								\
-	int UIOrder = 165;													\
+	int UIOrder = 171;													\
 > = false;
 
 /**
@@ -425,7 +629,7 @@ https://pixelandpoly.com/ior.html
 <																			\
 	string UIGroup = HOG_GRP_MAT_PROPS;										\
 	string UIName = HOG_USE_VERTEX_C1_AO;									\
-	int UIOrder = 166;														\
+	int UIOrder = 172;														\
 > = false;
 
 // ---------------------------------------------

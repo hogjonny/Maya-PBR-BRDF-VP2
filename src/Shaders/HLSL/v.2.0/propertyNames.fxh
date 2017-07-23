@@ -52,20 +52,26 @@ If a property name needs to be modified, it would be changed here without needin
 #define HOG_MATERIAL_ALBEDO				"Albedo Color"
 
 // Material properties
+#define HOG_MATERIAL_ANISOTROPIC		"Anisotropic"
 #define HOG_MATERIAL_ROUGHNESS			"Roughness"
 #define HOG_MATERIAL_METALNESS			"Metalness"
-#define HOG_MATERIAL_BUMPINTENSITY		"Normal Intensity"
-
 #define HOG_MATERIAL_SPECULAR			"Specular"
-#define HOG_MATERIAL_EMISSIVE			"Emissive"
-#define HOG_MATERIAL_EMISSIVEINT		"Emissive Intensity"
+#define HOG_MATERIAL_SPECTINT			"Specular Tint"
+#define HOG_MATERIAL_SHEEN				"Sheen"
+#define HOG_MATERIAL_SHEENTINT			"Sheen Tint"
+#define HOG_MATERIAL_CLEARCOAT			"Clearcoat"
+#define HOG_MATERIAL_CLEARCOATGLOSS		"Clearcoat Gloss"
+
+#define HOG_MATERIAL_EMISSIVE			"Emissive Color"
+#define HOG_MATERIAL_EMISSIVEINT		"Emissive Int"
 
 #define HOG_MATERIAL_IOR				"Index of Refraction (IOR)"
+#define HOG_MATERIAL_BUMPINTENSITY		"Normal Int"
+
 #define HOG_MATERIAL_SHINE				"Shine"
 #define HOG_MATERIAL_FRESNEL			"Fresnel"
 
 #define HOG_MATERIAL_DISPLACE			"Displace"
-#define HOG_MATERIAL_SPECTINT			"Specular Tint"
 #define HOG_MATERIAL_RADIANCE_FLUX		"Radiance Flux"
 #define HOG_IS_SHADOW_CASTER			"Is Shadow Caster"
 #define HOG_IS_SHADOW_RECEIVER			"Is Shadow Receiver"
@@ -94,8 +100,17 @@ If a property name needs to be modified, it would be changed here without needin
 #define HOG_NORMAL0_MAP					"Normal Map 0"
 #define HOG_NORMAL1_MAP					"Normal Map 1"
 
-#define HOG_SPECULAR_MAP				"Specular Map"
+#define HOG_ROUGHNESS_MAP				"Roughness Map"
+#define HOG_METALNESS_MAP				"Metalness Map"
+#define HOG_SPECF0_MAP					"Specular F0 Map"
+#define HOG_SPECULAR_MAP				"Specular A Map"
+
+#define HOG_HEIGHT_MAP					"Height Map"
+#define HOG_AMBOCC_MAP					"Amb Occ Map"
+#define HOG_CAVITY_MAP					"Cavity Map"
+
 #define HOG_EMISSIVE_MAP				"Emissive Map"
+#define HOG_ANISOTROPIC_MAP				"Anisotropic Map"
 
 #define HOG_BASE0_UV					"Base0 UV"
 #define HOG_BASE1_UV					"Base1 UV"

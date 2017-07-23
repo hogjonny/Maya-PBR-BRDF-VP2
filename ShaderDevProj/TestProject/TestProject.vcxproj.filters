@@ -71,9 +71,6 @@
     <None Include="..\..\src\Shaders\HLSL\v.2.0\samplers.fxh">
       <Filter>Assets\v2.0</Filter>
     </None>
-    <None Include="..\..\src\Shaders\HLSL\v.2.0\approxToneMapping.fxh">
-      <Filter>Assets\v2.0</Filter>
-    </None>
     <None Include="..\..\src\Shaders\HLSL\v.2.0\maxUtilities.fxh">
       <Filter>Assets\v2.0</Filter>
     </None>
@@ -89,12 +86,18 @@
     <None Include="..\..\src\Shaders\HLSL\v.1.0\propertyNames.fxh">
       <Filter>Assets\v1.0</Filter>
     </None>
+    <None Include="..\..\src\Shaders\HLSL\v.2.0\toneMapping.fxh">
+      <Filter>Assets\v2.0</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\..\src\Shaders\HLSL\v.1.0\mayaVP2_pbrBRDF.fx">
       <Filter>Assets\v1.0</Filter>
     </FxCompile>
     <FxCompile Include="..\..\src\Shaders\HLSL\v.2.0\uv0bn-pbs_IBLenv.fx">
+      <Filter>Assets\v2.0</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\src\Shaders\HLSL\v.2.0\V2_uv0bn-pbs_IBLenv.fx">
       <Filter>Assets\v2.0</Filter>
     </FxCompile>
   </ItemGroup>

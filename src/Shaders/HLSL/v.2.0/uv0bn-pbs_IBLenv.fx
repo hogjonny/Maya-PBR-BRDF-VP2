@@ -59,7 +59,7 @@ MAXTEXCOORD0
 //------------------------------------
 // from samplers.fxh
 // SamplerLinearWrap
-SAMPLERMINMAGMIPLINEAR
+SAMPLERMINMAGMIPLINEARWRAP
 // SamplerAnisoWrap
 SAMPLERSTATEANISOWRAP
 // SamplerShadowDepth

@@ -68,6 +68,9 @@ If a property name needs to be modified, it would be changed here without needin
 #define HOG_MATERIAL_IOR				"Index of Refraction (IOR)"
 #define HOG_MATERIAL_BUMPINTENSITY		"Normal Int"
 
+#define HOG_MATERIAL_USEPOM				"Use POM"
+#define HOG_MATERIAL_POMSCALE			"POM Height Scale"
+
 #define HOG_MATERIAL_SHINE				"Shine"
 #define HOG_MATERIAL_FRESNEL			"Fresnel"
 

@@ -14,7 +14,7 @@
 // some textures may override this value, but most textures will follow whatever we have defined here
 // If you wish to optimize performance (at the cost of reduced quality), you can set NumberOfMipMaps below to 1
 
-static const float cg_PI = 3.141592f;
+static const float cg_PI = 3.141592666f;
 
 #define NumberOfMipMaps 0
 #define ROUGHNESS_BIAS 0.005
@@ -58,8 +58,10 @@ MAXTEXCOORD0
 // Samplers
 //------------------------------------
 // from samplers.fxh
+// SamplerLinearClamp
+SAMPLERMINMAGMIPLINEARCLAMP
 // SamplerLinearWrap
-SAMPLERMINMAGMIPLINEAR
+SAMPLERMINMAGMIPLINEARWRAP
 // SamplerAnisoWrap
 SAMPLERSTATEANISOWRAP
 // SamplerShadowDepth
@@ -153,10 +155,11 @@ HOG_PROPERTY_SCENE_AMBHEMIMODE
 //------------------------------------
 cbuffer UpdatePerFrame : register(b0)
 {
-	float4x4 viewInv 		: ViewInverse < string UIWidget = "None"; > ;
-	float4x4 view			: View < string UIWidget = "None"; > ;
-	float4x4 prj			: Projection < string UIWidget = "None"; > ;
-	float4x4 viewPrj		: ViewProjection < string UIWidget = "None"; > ;
+	float4x4 viewInv 			: ViewInverse < string UIWidget = "None"; > ;
+	float4x4 view				: View < string UIWidget = "None"; > ;
+	float4x4 prj				: Projection < string UIWidget = "None"; > ;
+	float4x4 viewPrj			: ViewProjection < string UIWidget = "None"; > ;
+	float4x4 worldViewInvTrans	: WorldViewInverseTranspose < string UIWidget = "None"; > ;
 
 	// A shader may wish to do different actions when Maya is rendering the preview swatch (e.g. disable displacement)
 	// This value will be true if Maya is rendering the swatch
@@ -215,6 +218,10 @@ cbuffer UpdatePerObject : register(b1)
 	HOG_PROPERTY_MATERIAL_IOR
 	// materialBumpIntensity:		scalar 0..1 (soft)
 	HOG_PROPERTY_MATERIAL_BUMPINTENSITY
+	// useParallaxOcclusionMapping:	bool
+	HOG_PROPERTY_POM
+	// materialPomHeightScale:		float
+	HOG_PROPERTY_MATERIAL_POMHEIGHTSCALE
 	// useVertexC0_RGBA:			bool
 	HOG_PROPERTY_USE_VERTEX_C0_RGBA
 	// hasVertexAlpha:				bool
@@ -324,7 +331,7 @@ struct vsInput
 {
 	float3 m_Position		: POSITION0;
 	float4 m_AlbedoRGBA     : COLOR0;
-	float4 m_vertexAO		: COLOR1;
+	float4 m_VertexAO		: COLOR1;
 	float3 m_Normal			: NORMAL;
 	float3 m_Binormal		: BINORMAL;
 	float3 m_Tangent		: TANGENT;
@@ -338,12 +345,16 @@ struct vsInput
 struct VsOutput
 {
 	float4 m_Position		: SV_POSITION;
+	float3 m_Normal			: TEXCOORD6;
+	float3 m_Tangent		: TEXCOORD7;
 	float4 m_albedoRGBA     : COLOR0;
-	float4 m_vertexAO		: COLOR1;
+	float4 m_VertexAO		: COLOR1;
 	float2 m_Uv0			: TEXCOORD0;
 	float4 m_WorldPosition	: TEXCOORD1_centroid;
 	float4 m_View			: TEXCOORD2_centroid;
 	float3x3 m_TWMtx		: TEXCOORD3_centroid;
+	float3 m_EyePos			: POSITION1;
+	float m_PomSampleRatio	: PSIZE;
 };
 
 /**
@@ -356,6 +367,8 @@ VsOutput vsMain(vsInput v)
 	VsOutput OUT = (VsOutput)0;
 
 	OUT.m_Position = mul(float4(v.m_Position, 1), WorldViewProj);
+	OUT.m_Normal = v.m_Normal;
+	OUT.m_Tangent = v.m_Tangent;
 
 	// we pass vertices in world space
 	OUT.m_WorldPosition = mul(float4(v.m_Position, 1), World);
@@ -376,8 +389,8 @@ VsOutput vsMain(vsInput v)
 	if (useVertexC1_AO)
 	{
 		// Interpolate and ouput vertex color 1
-		OUT.m_vertexAO.rgb = v.m_vertexAO.rgb;
-		OUT.m_vertexAO.w = v.m_vertexAO.w;
+		OUT.m_VertexAO.rgb = v.m_VertexAO.rgb;
+		OUT.m_VertexAO.w = v.m_VertexAO.w;
 	}
 
 	// Pass through texture coordinates
@@ -402,6 +415,23 @@ VsOutput vsMain(vsInput v)
 
 	// Calculate the tangent to world space matrix
 	OUT.m_TWMtx = mul(tLocal, (float3x3)World);
+
+	// useParallaxOcclusionMapping:	bool
+	// materialPomHeightScale:		float
+	// ^ not sure if I need to do vertex work for POM just stubbing in
+	// we do need to output at least this for POM
+
+	// I think this is the views (eye) position?
+	// last row of inverted View matrix is simply camera position?
+	// Might have to divide by w if you can't assume w == 1
+	//OUT.m_EyePos = viewInv[3].xyz / OUT.m_View.w;
+	OUT.m_EyePos = viewInv[3].xyz;
+	// WorldViewProj
+	//OUT.m_EyePos = mul(WorldViewProj, float4(v.m_Position, 1.0f));
+
+	OUT.m_PomSampleRatio = 1 - dot(normalize(OUT.m_EyePos.xyz), v.m_Normal);
+
+	OUT.m_EyePos = normalize(mul(OUT.m_EyePos, OUT.m_TWMtx));
 
 	return OUT;
 }
@@ -431,10 +461,91 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 #ifdef _3DSMAX_
 	FrontFace = !FrontFace;
 #endif
+	// I think we need to POM before we clip?
+	// 1) silohuette pom clips
+	// 2) we can/should set up UV's before we start sampling textures?
+	
+	// unabashed modification of:  https://github.com/hamish-milne/POMUnity/blob/master/Assets/ParallaxOcclusion.cginc
+	// and: https://www.gamedev.net/articles/programming/graphics/a-closer-look-at-parallax-occlusion-mapping-r3262
+	// To Do: Put all of this in a function and include file (after it is working)
+	float2 baseUV = p.m_Uv0;
+	if (useParallaxOcclusionMapping)
+	{
+		/**
+		float3 viewerPos = float3(0, 0, 0);
+
+		float3 eyePos = mul(WorldViewProj, float4(p.m_WorldPosition.xyz, 1.0f)).xyz;
+
+		//Parallax Eye
+		float3 viewTan = mul(worldViewInvTrans, float4(p.m_Tangent, 1)).xyz;
+		float3 viewNorm = mul(worldViewInvTrans, float4(p.m_Normal, 1)).xyz;
+		float3 viewBinorm = cross(viewNorm, viewTan);
+
+		float3 viewDir = viewerPos - eyePos;
+		float3 viewProj = float3(
+			dot(viewTan, viewDir),
+			dot(viewBinorm, viewDir),
+			dot(viewNorm, viewDir)
+			);
+			*/
+
+		int nMaxSamples = 20;
+		int nMinSamples = 6;
+
+		float fParallaxLimit = -length(p.m_EyePos.xy) / p.m_EyePos.z;
+		fParallaxLimit *= materialPomHeightScale;
+
+		float2 vOffsetDir = normalize(p.m_EyePos.xy);
+		float2 vMaxOffset = vOffsetDir * fParallaxLimit;
+
+		int nNumSamples = (int)lerp(nMinSamples, nMaxSamples, saturate(p.m_PomSampleRatio));
+
+		float fStepSize = 1.0 / (float)nNumSamples;
+
+		float2 dx = ddx(p.m_Uv0);
+		float2 dy = ddy(p.m_Uv0);
+
+		float fCurrRayHeight = 1.0;
+		float2 vCurrOffset = float2(0.0, 0.0);
+		float2 vLastOffset = float2(0.0, 0.0);
+
+		float fLastSampledHeight = 1.0f;
+		float fCurrSampledHeight = 1.0f;
+		int nCurrSample = 0;
+
+		while (nCurrSample < nNumSamples)
+		{
+			fCurrSampledHeight = heightMap.SampleGrad(SamplerAnisoWrap, p.m_Uv0 + vCurrOffset, dx, dy).r;
+			if (fCurrSampledHeight > fCurrRayHeight)
+			{
+				float delta1 = fCurrSampledHeight - fCurrRayHeight;
+				float delta2 = (fCurrRayHeight + fStepSize) - fLastSampledHeight;
+
+				float ratio = delta1 / (delta1 + delta2);
+
+				vCurrOffset = (ratio)* vLastOffset + (1.0 - ratio) * vCurrOffset;
+
+				nCurrSample = nNumSamples + 1;
+			}
+			else
+			{
+				nCurrSample++;
+
+				fCurrRayHeight -= fStepSize;
+
+				vLastOffset = vCurrOffset;
+				vCurrOffset += fStepSize * vMaxOffset;
+
+				fLastSampledHeight = fCurrSampledHeight;
+			}
+		}
+		// calculate offset UV's
+		baseUV += vCurrOffset;
+	}
 
 	// texture maps and such
 	//baseColor, need to fetch it now so we can clip against albedo alpha channel
-	float4 baseColorTex = baseColorMap.Sample(SamplerAnisoWrap, p.m_Uv0).rgba;
+	float4 baseColorTex = baseColorMap.Sample(SamplerAnisoWrap, baseUV).rgba;
 
 	// we need to calculate and store a transperancy value to clip against
 	float transperancy = 1.0f;
@@ -446,7 +557,7 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	{
 		// clip as early as possible
 		// v1
-		//OpacityMaskClip(hasAlpha, SamplerLinearWrap, diffuseMap0, p.m_Uv0, opacityMaskBias);
+		//OpacityMaskClip(hasAlpha, SamplerLinearWrap, diffuseMap0, baseUV, opacityMaskBias);
 		// v2
 		OpacityClip(hasAlpha, transperancy, opacityMaskBias);
 	}
@@ -454,10 +565,10 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	// need to fetch the heightmap early, so we can calcualte POM
 	// because we will be clipping again
 	// heightMap:				Texture2D
-	float pbrHeight = 0.0f;
-	float heightTex = heightMap.Sample(SamplerAnisoWrap, p.m_Uv0);
-	if (heightTex > 0)
-		pbrHeight = heightTex;
+	//float pbrHeight = 0.0f;
+	//float heightTex = heightMap.Sample(SamplerAnisoWrap, baseUV);
+	//if (heightTex > 0)
+		//pbrHeight = heightTex;
 
 	// Silohuette Parallax Occlusion Mapping
 
@@ -466,7 +577,7 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 
 	// roughnessMap:			Texture2D
 	float pbrRoughness = 0.0f;
-	float roughnessTex = roughnessMap.Sample(SamplerAnisoWrap, p.m_Uv0).g;
+	float roughnessTex = roughnessMap.Sample(SamplerAnisoWrap, baseUV).g;
 	if (roughnessTex > 0)
 		pbrRoughness = roughnessTex;
 	pbrRoughness = lerp(float(0.0f).xxx, pbrRoughness, materialRoughness);
@@ -474,38 +585,38 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 
 	// metalnessMap:			Texture2D
 	float pbrMetalness = 0.0f;
-	float metalnessTex = metalnessMap.Sample(SamplerAnisoWrap, p.m_Uv0).g;
+	float metalnessTex = metalnessMap.Sample(SamplerAnisoWrap, baseUV).g;
 	if (metalnessTex > 0)
 		pbrMetalness = metalnessTex;
 	pbrMetalness = lerp(float(0.0f).xxx, pbrMetalness, materialMetalness);
 
 	// specularF0Map:			Texture2D
 	float pbrSpecF0 = 0.0f;
-	float specF0Tex = specularF0Map.Sample(SamplerAnisoWrap, p.m_Uv0).g;
+	float specF0Tex = specularF0Map.Sample(SamplerAnisoWrap, baseUV).g;
 	if (specF0Tex > 0)
 		pbrSpecF0 = specF0Tex;
 
 	// specularMap:				Texture2D
 	float pbrSpecAmount = 0.0f;
-	float specAmountTex = specularMap.Sample(SamplerAnisoWrap, p.m_Uv0);
+	float specAmountTex = specularMap.Sample(SamplerAnisoWrap, baseUV);
 	if (specAmountTex > 0)
 		pbrSpecAmount = specAmountTex;
 	pbrSpecAmount = lerp(float(0.0f).xxx, pbrSpecAmount, materialSpecular);
 
 	// ambOccMap:				Texture2D
 	float pbrAmbOcc = 0.0f;
-	float ambOccTex = ambOccMap.Sample(SamplerAnisoWrap, p.m_Uv0);
+	float ambOccTex = ambOccMap.Sample(SamplerAnisoWrap, baseUV);
 	if (ambOccTex > 0)
 		pbrAmbOcc = ambOccTex;
 
 	// cavityMap:				Texture2D
 	float pbrCavity = 0.0f;
-	float cavityTex = cavityMap.Sample(SamplerAnisoWrap, p.m_Uv0);
+	float cavityTex = cavityMap.Sample(SamplerAnisoWrap, baseUV);
 	if (cavityTex > 0)
 		pbrCavity = cavityTex;
 
 	// emissiveMap:				Texture2D
-	float3 emissiveTex = emissiveMap.Sample(SamplerAnisoWrap, p.m_Uv0).rgb;
+	float3 emissiveTex = emissiveMap.Sample(SamplerAnisoWrap, baseUV).rgb;
 	float3 pbrEmssive = emissiveTex.rgb;
 
 	// anisotropicMap:			Texture2D
@@ -514,7 +625,7 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	float bumpCavity = lerp(float(1.0f), pbrCavity, materialBumpIntensity);
 
 	// Normal Map
-	float3 normalRaw = (baseNormalMap.Sample(SamplerAnisoWrap, p.m_Uv0).xyz * 2.0f) - 1.0f;
+	float3 normalRaw = (baseNormalMap.Sample(SamplerAnisoWrap, baseUV).xyz * 2.0f) - 1.0f;
 
 	// FIX UP all color values --> Linear
 	// base color linear
@@ -527,7 +638,7 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	// set up the vertex AO
 	float3 vertAO = (1.0f, 1.0f, 1.0f);
 	if (useVertexC1_AO)
-		vertAO.rgb = p.m_vertexAO.rgb;
+		vertAO.rgb = p.m_VertexAO.rgb;
 
 	// Calculate the normals with intensity and derive Z
 	float3 nTS = float3(normalRaw.xy * materialBumpIntensity, sqrt(1.0 - saturate(dot(normalRaw.xy, normalRaw.xy))));
@@ -598,6 +709,9 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	//float3 F0 = abs(pow((1.0f - materialIOR), 2.0f) / pow((1.0f + materialIOR), 2.0f));
 	float F0 = abs((1.0f - materialIOR) / (1.0f + materialIOR));
 	F0 = F0 * F0;  // to the power of 2
+
+	if (pbrSpecF0 > 0)
+		F0 = pbrSpecF0;
 
 	// Specular tint (from disney plausible)
 	//float3 bColorLin = albedo.rgb; // pass in color already converted to linear
@@ -780,6 +894,9 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 
 		// load brdf lookup
 		brdfMap = brdfTextureMap.Sample(SamplerBrdfLUT, float2(NdotV, pbrRoughnessBiased), 0.0f).xyz;
+
+		float offset = 0.05f;
+		float3 refractedColor;
 
 		// load cubemaps
 		if (envMapType == 0)

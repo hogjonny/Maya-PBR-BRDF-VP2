@@ -603,13 +603,38 @@ https://pixelandpoly.com/ior.html
 > = 1.00f;
 
 /**
+@brief to do
+*/
+#define HOG_PROPERTY_POM bool useParallaxOcclusionMapping				\
+<																		\
+	string UIGroup = HOG_GRP_MAT_PROPS;									\
+	string UIName = HOG_MATERIAL_USEPOM;								\
+	int UIOrder = 170;													\
+> = false;
+
+/**
+@brief to do
+*/
+#define HOG_PROPERTY_MATERIAL_POMHEIGHTSCALE float materialPomHeightScale	\
+<																			\
+	string UIGroup = HOG_GRP_MAT_PROPS;										\
+	string UIName = HOG_MATERIAL_POMSCALE;									\
+	string UIWidget = "Slider";												\
+	float UIMin = 0.001;													\
+	float UISoftMax = 1.0;													\
+	float UIStep = 0.01;													\
+	int UIOrder = 171;														\
+> = 1.00f;
+
+
+/**
 @brief Macro to define switch for vertex color0, albedo RGBA
 */
 #define HOG_PROPERTY_USE_VERTEX_C0_RGBA bool useVertexC0_RGBA				\
 <																			\
 	string UIGroup = HOG_GRP_MAT_PROPS;										\
 	string UIName = HOG_USE_VERTEX_C0_RGBA;									\
-	int UIOrder = 170;														\
+	int UIOrder = 172;														\
 > = false;
 
 /**
@@ -619,7 +644,7 @@ https://pixelandpoly.com/ior.html
 <																		\
 	string UIGroup = HOG_GRP_MAT_PROPS;									\
 	string UIName = HOG_HAS_VERTEX_ALPHA;								\
-	int UIOrder = 171;													\
+	int UIOrder = 173;													\
 > = false;
 
 /**
@@ -629,7 +654,7 @@ https://pixelandpoly.com/ior.html
 <																			\
 	string UIGroup = HOG_GRP_MAT_PROPS;										\
 	string UIName = HOG_USE_VERTEX_C1_AO;									\
-	int UIOrder = 172;														\
+	int UIOrder = 174;														\
 > = false;
 
 // ---------------------------------------------

@@ -345,16 +345,15 @@ struct vsInput
 struct VsOutput
 {
 	float4 m_Position		: SV_POSITION;
-	float3 m_Normal			: TEXCOORD6;
-	float3 m_Tangent		: TEXCOORD7;
+	float3 m_NormalW		: TEXCOORD6;
+	float3 m_TangentW		: TEXCOORD7;
 	float4 m_albedoRGBA     : COLOR0;
 	float4 m_VertexAO		: COLOR1;
 	float2 m_Uv0			: TEXCOORD0;
 	float4 m_WorldPosition	: TEXCOORD1_centroid;
 	float4 m_View			: TEXCOORD2_centroid;
 	float3x3 m_TWMtx		: TEXCOORD3_centroid;
-	float3 m_EyePos			: POSITION1;
-	float m_PomSampleRatio	: PSIZE;
+	float3x3 m_WTMtx		: TEXCOORD8_centroid;
 };
 
 /**
@@ -367,8 +366,8 @@ VsOutput vsMain(vsInput v)
 	VsOutput OUT = (VsOutput)0;
 
 	OUT.m_Position = mul(float4(v.m_Position, 1), WorldViewProj);
-	OUT.m_Normal = v.m_Normal;
-	OUT.m_Tangent = v.m_Tangent;
+	OUT.m_NormalW = mul(v.m_Normal, WorldIT);
+	OUT.m_TangentW = mul(v.m_Tangent, World);
 
 	// we pass vertices in world space
 	OUT.m_WorldPosition = mul(float4(v.m_Position, 1), World);
@@ -405,6 +404,7 @@ VsOutput vsMain(vsInput v)
 	// pulling the view position in world space from the inverse view matrix 4th row
 	OUT.m_View.xyz = viewInv[3].xyz - OUT.m_WorldPosition.xyz;
 	OUT.m_View.w = length(OUT.m_View.xyz);
+	// normalize
 	OUT.m_View.xyz *= rcp(OUT.m_View.w);
 
 	// Compose the tangent space to local space matrix
@@ -416,22 +416,8 @@ VsOutput vsMain(vsInput v)
 	// Calculate the tangent to world space matrix
 	OUT.m_TWMtx = mul(tLocal, (float3x3)World);
 
-	// useParallaxOcclusionMapping:	bool
-	// materialPomHeightScale:		float
-	// ^ not sure if I need to do vertex work for POM just stubbing in
-	// we do need to output at least this for POM
-
-	// I think this is the views (eye) position?
-	// last row of inverted View matrix is simply camera position?
-	// Might have to divide by w if you can't assume w == 1
-	//OUT.m_EyePos = viewInv[3].xyz / OUT.m_View.w;
-	OUT.m_EyePos = viewInv[3].xyz;
-	// WorldViewProj
-	//OUT.m_EyePos = mul(WorldViewProj, float4(v.m_Position, 1.0f));
-
-	OUT.m_PomSampleRatio = 1 - dot(normalize(OUT.m_EyePos.xyz), v.m_Normal);
-
-	OUT.m_EyePos = normalize(mul(OUT.m_EyePos, OUT.m_TWMtx));
+	// world space to tangent matrix?
+	OUT.m_WTMtx = transpose(tLocal);
 
 	return OUT;
 }
@@ -467,6 +453,7 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	
 	// unabashed modification of:  https://github.com/hamish-milne/POMUnity/blob/master/Assets/ParallaxOcclusion.cginc
 	// and: https://www.gamedev.net/articles/programming/graphics/a-closer-look-at-parallax-occlusion-mapping-r3262
+	// with help from:  http://www.d3dcoder.net/Data/Resources/ParallaxOcclusion.pdf
 	// To Do: Put all of this in a function and include file (after it is working)
 	float2 baseUV = p.m_Uv0;
 	if (useParallaxOcclusionMapping)
@@ -488,19 +475,34 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 			dot(viewNorm, viewDir)
 			);
 			*/
+		
+		// Interpolating normal can unnormalize it, so normalize it.
+		p.m_NormalW = normalize(p.m_NormalW);
+
+		float3 viewDirW = -p.m_View.xyz;
+		float3 viewDirTS = normalize(mul(viewDirW, p.m_WTMtx));
 
 		int nMaxSamples = 20;
 		int nMinSamples = 6;
 
-		float fParallaxLimit = -length(p.m_EyePos.xy) / p.m_EyePos.z;
+		float fParallaxLimit = -length(viewDirTS.xy) / viewDirTS.z;
 		fParallaxLimit *= materialPomHeightScale;
 
-		float2 vOffsetDir = normalize(p.m_EyePos.xy);
+		//float2 maxParallaxOffset = -viewDirTS.xy * materialPomHeightScale / viewDirTS.z;
+
+		float2 vOffsetDir = normalize(viewDirTS.xy);
 		float2 vMaxOffset = vOffsetDir * fParallaxLimit;
 
-		int nNumSamples = (int)lerp(nMinSamples, nMaxSamples, saturate(p.m_PomSampleRatio));
+		float pomSampleRatio = 1.0f - dot( normalize(viewDirTS), -p.m_NormalW);
 
+		// sampleCount
+		int nNumSamples = (int)lerp(nMinSamples, nMaxSamples, saturate(pomSampleRatio));
+
+		// zStep
 		float fStepSize = 1.0 / (float)nNumSamples;
+
+		// texStep
+		//float2 vMaxOffset = maxParallaxOffset * maxParallaxOffset;
 
 		float2 dx = ddx(p.m_Uv0);
 		float2 dy = ddy(p.m_Uv0);

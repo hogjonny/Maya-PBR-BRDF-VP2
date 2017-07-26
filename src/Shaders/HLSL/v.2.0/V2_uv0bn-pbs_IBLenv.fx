@@ -332,10 +332,10 @@ struct vsInput
 	float3 m_Position		: POSITION0;
 	float4 m_AlbedoRGBA     : COLOR0;
 	float4 m_VertexAO		: COLOR1;
-	float3 m_Normal			: NORMAL;
-	float3 m_Binormal		: BINORMAL;
-	float3 m_Tangent		: TANGENT;
 	float2 m_Uv0			: TEXCOORD0;
+	float3 m_Normal			: NORMAL;
+	float3 m_Tangent		: TANGENT;
+	float3 m_Binormal		: BINORMAL;
 };
 
 /**
@@ -345,15 +345,16 @@ struct vsInput
 struct VsOutput
 {
 	float4 m_Position		: SV_POSITION;
-	float3 m_NormalW		: TEXCOORD6;
-	float3 m_TangentW		: TEXCOORD7;
 	float4 m_albedoRGBA     : COLOR0;
 	float4 m_VertexAO		: COLOR1;
 	float2 m_Uv0			: TEXCOORD0;
 	float4 m_WorldPosition	: TEXCOORD1_centroid;
 	float4 m_View			: TEXCOORD2_centroid;
 	float3x3 m_TWMtx		: TEXCOORD3_centroid;
-	float3x3 m_WTMtx		: TEXCOORD8_centroid;
+	//float3x3 m_WTMtx		: TEXCOORD8_centroid;
+	float3 m_NormalW		: TEXCOORD6;
+	float3 m_TangentW		: TEXCOORD7;
+	float3 m_BinormalW		: TEXCOORD8;
 };
 
 /**
@@ -365,9 +366,15 @@ VsOutput vsMain(vsInput v)
 {
 	VsOutput OUT = (VsOutput)0;
 
-	OUT.m_Position = mul(float4(v.m_Position, 1), WorldViewProj);
-	OUT.m_NormalW = mul(v.m_Normal, WorldIT);
-	OUT.m_TangentW = mul(v.m_Tangent, World);
+
+	//OUT.eye = normalize(mul(World, v.m_Position) - mul(viewInv, float4(0,0,0,1))).xyz;
+
+	OUT.m_Position = mul(float4(v.m_Position, 1.0f), WorldViewProj);
+
+	//OUT.m_NormalW = normalize(mul(v.m_Normal, WorldIT));
+	OUT.m_NormalW = normalize(mul(v.m_Normal, World));
+	OUT.m_TangentW = normalize(mul(v.m_Tangent, World));
+	OUT.m_BinormalW = normalize(mul(v.m_Binormal, World));
 
 	// we pass vertices in world space
 	OUT.m_WorldPosition = mul(float4(v.m_Position, 1), World);
@@ -395,7 +402,7 @@ VsOutput vsMain(vsInput v)
 	// Pass through texture coordinates
 	// flip Y for Maya
 #ifdef _MAYA_
-	OUT.m_Uv0 = float2(v.m_Uv0.x, (1.0 - v.m_Uv0.y));
+	OUT.m_Uv0 = float2(v.m_Uv0.x, - v.m_Uv0.y);
 #else
 	OUT.m_Uv0 = v.m_Uv0;
 #endif
@@ -417,7 +424,7 @@ VsOutput vsMain(vsInput v)
 	OUT.m_TWMtx = mul(tLocal, (float3x3)World);
 
 	// world space to tangent matrix?
-	OUT.m_WTMtx = transpose(tLocal);
+	//OUT.m_WTMtx = transpose(tLocal);
 
 	return OUT;
 }
@@ -457,92 +464,93 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	// To Do: Put all of this in a function and include file (after it is working)
 	float2 baseUV = p.m_Uv0;
 	if (useParallaxOcclusionMapping)
+	// To Do:
+	// POM self shadowing
+	// POM Clipping
 	{
-		/**
-		float3 viewerPos = float3(0, 0, 0);
+		float3 viewDirW = -p.m_View.xyz;
+		//float3 viewDirTS = mul(viewDirW, p.m_WTMtx);
 
-		float3 eyePos = mul(WorldViewProj, float4(p.m_WorldPosition.xyz, 1.0f)).xyz;
-
-		//Parallax Eye
-		float3 viewTan = mul(worldViewInvTrans, float4(p.m_Tangent, 1)).xyz;
-		float3 viewNorm = mul(worldViewInvTrans, float4(p.m_Normal, 1)).xyz;
-		float3 viewBinorm = cross(viewNorm, viewTan);
-
-		float3 viewDir = viewerPos - eyePos;
-		float3 viewProj = float3(
-			dot(viewTan, viewDir),
-			dot(viewBinorm, viewDir),
-			dot(viewNorm, viewDir)
-			);
-			*/
-		
+		// Build orthonormal basis.
 		// Interpolating normal can unnormalize it, so normalize it.
 		p.m_NormalW = normalize(p.m_NormalW);
 
-		float3 viewDirW = -p.m_View.xyz;
-		float3 viewDirTS = normalize(mul(viewDirW, p.m_WTMtx));
+		float3x3 worldToTangent;
+		// T
+		worldToTangent[0] = normalize(p.m_TangentW - dot(p.m_TangentW, p.m_NormalW) * p.m_NormalW);
+		// B
+		//worldToTangent[1] = cross(p.m_NormalW, worldToTangent[0]);
+		worldToTangent[1] = -p.m_BinormalW;  // had to -, why!?
+		// N
+		worldToTangent[2] = p.m_NormalW;
 
+		worldToTangent = transpose( worldToTangent );
+
+		float3 viewDirTS = mul(viewDirW, worldToTangent);
+
+		// To Do: Expose as surface parameters?
 		int nMaxSamples = 20;
 		int nMinSamples = 6;
 
-		float fParallaxLimit = -length(viewDirTS.xy) / viewDirTS.z;
-		fParallaxLimit *= materialPomHeightScale;
-
-		//float2 maxParallaxOffset = -viewDirTS.xy * materialPomHeightScale / viewDirTS.z;
-
-		float2 vOffsetDir = normalize(viewDirTS.xy);
-		float2 vMaxOffset = vOffsetDir * fParallaxLimit;
-
-		float pomSampleRatio = 1.0f - dot( normalize(viewDirTS), -p.m_NormalW);
+		float2 maxParallaxOffset = -viewDirTS.xy * materialPomHeightScale / viewDirTS.z;
 
 		// sampleCount
-		int nNumSamples = (int)lerp(nMinSamples, nMaxSamples, saturate(pomSampleRatio));
+		int nNumSamples = (int)lerp(nMinSamples, nMaxSamples, dot(p.m_View.xyz, p.m_NormalW));
 
 		// zStep
 		float fStepSize = 1.0 / (float)nNumSamples;
 
 		// texStep
-		//float2 vMaxOffset = maxParallaxOffset * maxParallaxOffset;
+		float2 vMaxOffset = maxParallaxOffset * fStepSize;
 
+		// Precompute texture gradients since we cannot compute texture
+		// gradients in a loop. Texture gradients are used to select the right
+		// mipmap level when sampling textures. Then we use Texture2D.SampleGrad()
+		// instead of Texture2D.Sample().
 		float2 dx = ddx(p.m_Uv0);
 		float2 dy = ddy(p.m_Uv0);
 
-		float fCurrRayHeight = 1.0;
-		float2 vCurrOffset = float2(0.0, 0.0);
-		float2 vLastOffset = float2(0.0, 0.0);
-
-		float fLastSampledHeight = 1.0f;
-		float fCurrSampledHeight = 1.0f;
+		// sampleIndex
 		int nCurrSample = 0;
 
-		while (nCurrSample < nNumSamples)
+		float2 currTexOffset = 0;
+		float2 prevTexOffset = 0;
+		float2 finalTexOffset = 0;
+		float currRayZ = 1.0f - fStepSize;
+		float prevRayZ = 1.0f;
+		float currHeight = 0.0f;
+		float prevHeight = 0.0f;
+
+		// Ray trace the heightfield.
+		while (nCurrSample < nNumSamples + 1)
 		{
-			fCurrSampledHeight = heightMap.SampleGrad(SamplerAnisoWrap, p.m_Uv0 + vCurrOffset, dx, dy).r;
-			if (fCurrSampledHeight > fCurrRayHeight)
+			// fetch height
+			currHeight = heightMap.SampleGrad(SamplerAnisoWrap, p.m_Uv0 + currTexOffset, dx, dy).r;
+
+			// Did we cross the height profile?
+			if (currHeight > currRayZ)
 			{
-				float delta1 = fCurrSampledHeight - fCurrRayHeight;
-				float delta2 = (fCurrRayHeight + fStepSize) - fLastSampledHeight;
-
-				float ratio = delta1 / (delta1 + delta2);
-
-				vCurrOffset = (ratio)* vLastOffset + (1.0 - ratio) * vCurrOffset;
-
+				// Do ray/line segment intersection and compute final tex offset.
+				float t = (prevHeight - prevRayZ) /
+					(prevHeight - currHeight + currRayZ - prevRayZ);
+				finalTexOffset = prevTexOffset + t * vMaxOffset;
+				// Exit loop.
 				nCurrSample = nNumSamples + 1;
 			}
 			else
 			{
-				nCurrSample++;
-
-				fCurrRayHeight -= fStepSize;
-
-				vLastOffset = vCurrOffset;
-				vCurrOffset += fStepSize * vMaxOffset;
-
-				fLastSampledHeight = fCurrSampledHeight;
+				++nCurrSample;
+				prevTexOffset = currTexOffset;
+				prevRayZ = currRayZ;
+				prevHeight = currHeight;
+				currTexOffset += vMaxOffset;
+				// Negative because we are going "deeper" into the surface.
+				currRayZ -= fStepSize;
 			}
 		}
-		// calculate offset UV's
-		baseUV += vCurrOffset;
+		// Use these texture coordinates for subsequent texture
+		// fetches (color map, normal map, etc.).
+		baseUV += finalTexOffset;
 	}
 
 	// texture maps and such

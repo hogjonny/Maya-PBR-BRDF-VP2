@@ -292,7 +292,7 @@ int g_DebugMode
 <
 	string UIGroup = "DEBUG [Preview]";
 	string UIWidget = "Slider";
-	string UIFieldNames = "o.m_Color.rgb:baseColorTex.rgb:baseColorTex.aaa:bColorLin.rgb:mColorLin.rgb:p.m_albedoRGBA.rgb:p.m_albedoRGBA.aaa:pbrMetalness.xxx:pbrRoughness.xxx:pbrAO.xxx:pbrCavity.xxx:baseNormalMap.xyz:normalRaw.xyz:F0.xxx:bClum.xxx:Ctint.rgb:Cspec0.rgb:diffuse.rgb:specular.rgb:pbrRoughness.xxx:roughA.xxx:roughA2.xxx:roughnessBiasedA.xxx:roughnessBiasedA2.xxx:NdotV:ambDomeColor.rgb:ambDomeLinColor.rgb:diffEnvLin.rgb:specEnvLin.rgb:cSpecLin";
+	string UIFieldNames = "o.m_Color.rgb:baseColorTex.rgb:baseColorTex.aaa:bColorLin.rgb:mColorLin.rgb:p.m_albedoRGBA.rgb:p.m_albedoRGBA.aaa:pbrMetalness.xxx:pbrRoughness.xxx:pbrAO.xxx:pbrCavity.xxx:baseNormalMap.xyz:normalRaw.xyz:F0.xxx:bClum.xxx:Ctint.rgb:Cspec0.rgb:diffuse.rgb:specular.rgb:pbrRoughness.xxx:roughA.xxx:roughA2.xxx:roughnessBiasedA.xxx:roughnessBiasedA2.xxx:NdotV:ambDomeColor.rgb:ambDomeLinColor.rgb:diffEnvLin.rgb:specEnvLin.rgb:cSpecLin:baseUV";
 	string UIName = "DEBUG VIEW";
 	int UIOrder = 0;
 > = 0;
@@ -463,8 +463,22 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	// with help from:  http://www.d3dcoder.net/Data/Resources/ParallaxOcclusion.pdf
 	// To Do: Put all of this in a function and include file (after it is working)
 	float2 baseUV = p.m_Uv0;
+
+	// Parallax Mapping
+	// Parallax Releif Mapping
+	// http://sunandblackcat.com/tipFullView.php?topicid=28
+
+	// To Do: Expose as surface parameters?
+	int nMaxSamples = 75;
+	int nMinSamples = 25;
+
+	// these are also later used in POM self-occlusion
+	float lastSampledHeight = 1;
+	float fStepSize = 0.0;
+	float2 finalTexOffset = 0;
+
 	if (useParallaxOcclusionMapping)
-	// To Do:
+	// To Do: make this a function call in parallax.sif
 	// POM self shadowing
 	// POM Clipping
 	{
@@ -481,16 +495,12 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 		// B
 		//worldToTangent[1] = cross(p.m_NormalW, worldToTangent[0]);
 		worldToTangent[1] = -p.m_BinormalW;  // had to -, why!?
-		// N
+											 // N
 		worldToTangent[2] = p.m_NormalW;
 
-		worldToTangent = transpose( worldToTangent );
+		worldToTangent = transpose(worldToTangent);
 
 		float3 viewDirTS = mul(viewDirW, worldToTangent);
-
-		// To Do: Expose as surface parameters?
-		int nMaxSamples = 20;
-		int nMinSamples = 6;
 
 		float2 maxParallaxOffset = -viewDirTS.xy * materialPomHeightScale / viewDirTS.z;
 
@@ -498,7 +508,7 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 		int nNumSamples = (int)lerp(nMinSamples, nMaxSamples, dot(p.m_View.xyz, p.m_NormalW));
 
 		// zStep
-		float fStepSize = 1.0 / (float)nNumSamples;
+		fStepSize = 1.0 / (float)nNumSamples;
 
 		// texStep
 		float2 vMaxOffset = maxParallaxOffset * fStepSize;
@@ -515,7 +525,6 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 
 		float2 currTexOffset = 0;
 		float2 prevTexOffset = 0;
-		float2 finalTexOffset = 0;
 		float currRayZ = 1.0f - fStepSize;
 		float prevRayZ = 1.0f;
 		float currHeight = 0.0f;
@@ -533,7 +542,11 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 				// Do ray/line segment intersection and compute final tex offset.
 				float t = (prevHeight - prevRayZ) /
 					(prevHeight - currHeight + currRayZ - prevRayZ);
+
 				finalTexOffset = prevTexOffset + t * vMaxOffset;
+
+				lastSampledHeight = prevHeight + t * vMaxOffset;
+
 				// Exit loop.
 				nCurrSample = nNumSamples + 1;
 			}
@@ -546,12 +559,22 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 				currTexOffset += vMaxOffset;
 				// Negative because we are going "deeper" into the surface.
 				currRayZ -= fStepSize;
+
+				lastSampledHeight = currHeight;
 			}
 		}
 		// Use these texture coordinates for subsequent texture
 		// fetches (color map, normal map, etc.).
 		baseUV += finalTexOffset;
 	}
+
+	// Parallax Mapping and Self-Shadowing
+	// // http://sunandblackcat.com/tipFullView.php?topicid=28
+
+	// Silohuette Parallax Occlusion Mapping
+	// POM clipping, this doesn't work ... and I don't know how to do it properly.
+	//clip(baseUV);
+	//clip(1.0f - baseUV);
 
 	// texture maps and such
 	//baseColor, need to fetch it now so we can clip against albedo alpha channel
@@ -571,16 +594,6 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 		// v2
 		OpacityClip(hasAlpha, transperancy, opacityMaskBias);
 	}
-
-	// need to fetch the heightmap early, so we can calcualte POM
-	// because we will be clipping again
-	// heightMap:				Texture2D
-	//float pbrHeight = 0.0f;
-	//float heightTex = heightMap.Sample(SamplerAnisoWrap, baseUV);
-	//if (heightTex > 0)
-		//pbrHeight = heightTex;
-
-	// Silohuette Parallax Occlusion Mapping
 
 	// setup Gamma Corrention
 	float gammaCorrectionExponent = linearSpaceLighting ? gammaCorrectionValue : 1.0;
@@ -812,6 +825,71 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 				diffuse *= shadow;
 				specular *= shadow;
 			}
+
+			//**
+			// Parallax Occlusion Self-Shadowing
+			// Implementing just on the directional light to begin with
+			// To Do: make this a function call in parallax.sif
+
+			// To Do: Put usePOMselfShadow as checkbox in UI
+			bool usePOMselfShadow = true;
+			// same
+			//float selfOcc = 0.0;
+			// same
+			float selfOccOffset = 0.1;
+			// same
+			float selfOccStrength = 1.0; //range 0..1
+
+			if (useParallaxOcclusionMapping && usePOMselfShadow)
+			{
+				float2 dx = ddx(p.m_Uv0);
+				float2 dy = ddy(p.m_Uv0);
+
+				float fOcclusionLimit = length(lights[i].m_Direction.xy) / lights[i].m_Direction.z;
+				fOcclusionLimit *= materialPomHeightScale;
+
+				float2 vOcclusionOffsetDir = normalize(lights[i].m_Direction.xy);
+				float2 vMaxOcclusionOffset = vOcclusionOffsetDir * fOcclusionLimit;
+
+				int nNumSamplesOcclusion = (int)lerp(nMaxSamples, nMinSamples, NdotL);
+				float fStepSizeOcclusion = (1.0 - lastSampledHeight) / (float)nNumSamplesOcclusion;
+
+				float fCurrRayHeightOcclusion = lastSampledHeight + selfOccOffset;
+				float2 vCurrOffsetOcclusion = finalTexOffset;
+				float2 vLastOffsetOcclusion = finalTexOffset;
+
+				float fLastSampledHeightOcclusion = lastSampledHeight + selfOccOffset;
+				float fCurrSampledHeightOcclusion = lastSampledHeight + selfOccOffset;
+
+				int nCurrSampleOcclusion = 0;
+				float selfOccShadow = 1.0;
+
+				while (nCurrSampleOcclusion < nNumSamplesOcclusion)
+				{
+					fCurrSampledHeightOcclusion = heightMap.SampleGrad(SamplerAnisoWrap, p.m_Uv0 + vCurrOffsetOcclusion, dx, dy).r;
+					if (fCurrSampledHeightOcclusion > fCurrRayHeightOcclusion)
+					{
+						if (usePOMselfShadow) selfOccShadow = 1.0 - selfOccStrength;
+
+						nCurrSampleOcclusion = nNumSamplesOcclusion + 1;
+					}
+					else
+					{
+						nCurrSampleOcclusion++;
+
+						fCurrRayHeightOcclusion += fStepSize;
+
+						vLastOffsetOcclusion = vCurrOffsetOcclusion;
+						vCurrOffsetOcclusion -= fStepSizeOcclusion * vMaxOcclusionOffset;
+
+						fLastSampledHeightOcclusion = fCurrSampledHeightOcclusion;
+					}
+				}
+
+				diffuse *= selfOccShadow;
+				specular *= selfOccShadow;
+			}
+			//*/
 		}
 		else if (lights[i].m_Type == 3) //Point
 		{
@@ -1002,7 +1080,7 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 #endif
 
 // Debug views
-//"o.m_Color.rgb:baseColorTex.rgb:baseColorTex.aaa:bColorLin.rgb:mColorLin.rgb:p.m_albedoRGBA.rgb:p.m_albedoRGBA.aaa:pbrMetalness.xxx:pbrRoughness.xxx:pbrAO.xxx:pbrCavity.xxx:baseNormalMap.xyz:normalRaw.xyz:F0.xxx:bClum.xxx:Ctint.rgb:Cspec0.rgb:diffuse.rgb:specular.rgb:pbrRoughness.xxx:roughA.xxx:roughA2.xxx:roughnessBiasedA.xxx:roughnessBiasedA2.xxx:NdotV:ambDomeColor.rgb:ambDomeLinColor.rgb:diffEnvLin.rgb:specEnvLin.rgb:cSpecLin"
+//"o.m_Color.rgb:baseColorTex.rgb:baseColorTex.aaa:bColorLin.rgb:mColorLin.rgb:p.m_albedoRGBA.rgb:p.m_albedoRGBA.aaa:pbrMetalness.xxx:pbrRoughness.xxx:pbrAO.xxx:pbrCavity.xxx:baseNormalMap.xyz:normalRaw.xyz:F0.xxx:bClum.xxx:Ctint.rgb:Cspec0.rgb:diffuse.rgb:specular.rgb:pbrRoughness.xxx:roughA.xxx:roughA2.xxx:roughnessBiasedA.xxx:roughnessBiasedA2.xxx:NdotV:ambDomeColor.rgb:ambDomeLinColor.rgb:diffEnvLin.rgb:specEnvLin.rgb:cSpecLin:baseUV"
 #ifdef _MAYA_
 	if (g_DebugMode > 0)
 	{
@@ -1035,6 +1113,23 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 		if (g_DebugMode == 27) result = diffEnvLin.rgb;
 		if (g_DebugMode == 28) result = specEnvLin.rgb;
 		if (g_DebugMode == 29) result = cSpecLin;
+		if (g_DebugMode == 30)
+		{
+			float3 uvColor = float3(0.0,0.0,0.0);
+			if (baseUV.x < 0)
+				uvColor = float3(0, 1, 0); // output green 
+
+			if (baseUV.y < 0)
+				uvColor = float3(0, 0, 1); // output blue
+
+			if (baseUV.x > 1)
+				uvColor = float3(1, 0, 0); // output red
+
+			if (baseUV.y > 1)
+				uvColor = float3(1, 0, 1); // output magenta
+
+			float3 result = float4(uvColor.rgb, 1.0);
+		}
 	}
 #endif
 

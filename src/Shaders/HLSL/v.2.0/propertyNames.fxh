@@ -21,6 +21,7 @@ If a property name needs to be modified, it would be changed here without needin
 #define HOG_GRP_SHADOW_PROPS			"Shadow Properties"
 #define HOG_GRP_ADV_PROPS				"Advanced Properties"
 #define HOG_GRP_ENGN_PREV				"Engine | Scene Preview"
+#define HOG_GRP_PARA_OCC				"Parallax Occlusion"
 
 // colors
 #define HOG_MATERIAL_AMBIENT			"Surface Ambient"
@@ -70,6 +71,14 @@ If a property name needs to be modified, it would be changed here without needin
 
 #define HOG_MATERIAL_USEPOM				"Use POM"
 #define HOG_MATERIAL_POMSCALE			"POM Height Scale"
+#define HOG_MATERIAL_USEPOMSHDW			"Use POM Shadows"
+#define HOG_MATERIAL_POMOCCOFFSET		"POM Occ Offset"
+#define HOG_MATERIAL_POMOCCSTRENGTH		"POM Occ Strength"
+#define HOG_MATERIAL_USEPOMSOFTSHDW		"Use POM SoftShadows"
+#define HOG_MATERIAL_POMSOFTSHDWAMT		"POM SoftShadows Amt"
+
+#define HOG_MATERIAL_POMMINSAMPLES		"POM Min Samples"
+#define HOG_MATERIAL_POMMAXSAMPLES		"POM Max Samples"
 
 #define HOG_MATERIAL_SHINE				"Shine"
 #define HOG_MATERIAL_FRESNEL			"Fresnel"

@@ -602,30 +602,6 @@ https://pixelandpoly.com/ior.html
 	int UIOrder = 169;														\
 > = 1.00f;
 
-/**
-@brief to do
-*/
-#define HOG_PROPERTY_POM bool useParallaxOcclusionMapping				\
-<																		\
-	string UIGroup = HOG_GRP_MAT_PROPS;									\
-	string UIName = HOG_MATERIAL_USEPOM;								\
-	int UIOrder = 170;													\
-> = false;
-
-/**
-@brief to do
-*/
-#define HOG_PROPERTY_MATERIAL_POMHEIGHTSCALE float materialPomHeightScale	\
-<																			\
-	string UIGroup = HOG_GRP_MAT_PROPS;										\
-	string UIName = HOG_MATERIAL_POMSCALE;									\
-	string UIWidget = "Slider";												\
-	float UIMin = 0.001;													\
-	float UISoftMax = 1.0;													\
-	float UIStep = 0.01;													\
-	int UIOrder = 171;														\
-> = 1.00f;
-
 
 /**
 @brief Macro to define switch for vertex color0, albedo RGBA
@@ -656,6 +632,126 @@ https://pixelandpoly.com/ior.html
 	string UIName = HOG_USE_VERTEX_C1_AO;									\
 	int UIOrder = 174;														\
 > = false;
+
+// ---------------------------------------------
+// string UIGroup = "Parallax Occlusion"; UI 190+
+// ---------------------------------------------
+//#define HOG_GRP_PARA_OCC "Parallax Occlusion"
+
+/**
+@brief to do
+*/
+#define HOG_PROPERTY_POM bool useParallaxOcclusionMapping				\
+<																		\
+	string UIGroup = HOG_GRP_PARA_OCC;									\
+	string UIName = HOG_MATERIAL_USEPOM;								\
+	int UIOrder = 190;													\
+> = false;
+
+/**
+@brief to do
+*/
+#define HOG_PROPERTY_MATERIAL_POMHEIGHTSCALE float materialPomHeightScale	\
+<																			\
+	string UIGroup = HOG_GRP_PARA_OCC;										\
+	string UIName = HOG_MATERIAL_POMSCALE;									\
+	string UIWidget = "Slider";												\
+	float UIMin = 0.001;													\
+	float UISoftMax = 1.0;													\
+	float UIStep = 0.01;													\
+	int UIOrder = 191;														\
+> = 1.00f;
+
+/**
+@brief to do
+*/
+#define HOG_PROPERTY_USEPOMSHDW bool usePOMselfShadow					\
+<																		\
+	string UIGroup = HOG_GRP_PARA_OCC;									\
+	string UIName = HOG_MATERIAL_USEPOMSHDW;							\
+	int UIOrder = 192;													\
+> = false;
+
+/**
+@brief to do
+*/
+#define HOG_PROPERTY_MATERIAL_POMMINSAMPLES int pomMinSamples				\
+<																			\
+	string UIGroup = HOG_GRP_PARA_OCC;										\
+	string UIName = HOG_MATERIAL_POMMINSAMPLES;								\
+	string UIWidget = "Slider";												\
+	float UIMin = 1;														\
+	float UISoftMax = 100;													\
+	float UIStep = 1;														\
+	int UIOrder = 193;														\
+> = 25;
+
+/**
+@brief to do
+*/
+#define HOG_PROPERTY_MATERIAL_POMMAXSAMPLES int pomMaxSamples				\
+<																			\
+	string UIGroup = HOG_GRP_PARA_OCC;										\
+	string UIName = HOG_MATERIAL_POMMAXSAMPLES;								\
+	string UIWidget = "Slider";												\
+	float UIMin = 1;														\
+	float UISoftMax = 100;													\
+	float UIStep = 1;														\
+	int UIOrder = 194;														\
+> = 75;
+
+
+/**
+@brief to do
+*/
+#define HOG_PROPERTY_MATERIAL_POMOCCOFFSET float selfOccOffset				\
+<																			\
+	string UIGroup = HOG_GRP_PARA_OCC;										\
+	string UIName = HOG_MATERIAL_POMOCCOFFSET;								\
+	string UIWidget = "Slider";												\
+	float UIMin = 0.001;													\
+	float UISoftMax = 1.0;													\
+	float UIStep = 0.01;													\
+	int UIOrder = 193;														\
+> = 0.09f;
+
+/**
+@brief to do
+*/
+#define HOG_PROPERTY_MATERIAL_POMOCCSTRENGTH float selfOccStrength			\
+<																			\
+	string UIGroup = HOG_GRP_PARA_OCC;										\
+	string UIName = HOG_MATERIAL_POMOCCSTRENGTH;							\
+	string UIWidget = "Slider";												\
+	float UIMin = 0.001;													\
+	float UISoftMax = 1.0;													\
+	float UIStep = 0.01;													\
+	int UIOrder = 194;														\
+> = 0.7f;
+
+/**
+@brief to do
+*/
+#define HOG_PROPERTY_USEPOMSOFTSHDW	 bool usePOMsoftShadow				\
+<																		\
+	string UIGroup = HOG_GRP_PARA_OCC;									\
+	string UIName = HOG_MATERIAL_USEPOMSOFTSHDW;						\
+	int UIOrder = 192;													\
+> = false;
+
+/**
+@brief to do
+*/
+#define HOG_PROPERTY_MATERIAL_POMSOFTSHDWAMT float pomSoftShadowAmount		\
+<																			\
+	string UIGroup = HOG_GRP_PARA_OCC;										\
+	string UIName = HOG_MATERIAL_POMSOFTSHDWAMT;							\
+	string UIWidget = "Slider";												\
+	float UIMin = 0.001;													\
+	float UISoftMax = 1.0;													\
+	float UIStep = 0.01;													\
+	int UIOrder = 194;														\
+> = 1.0f;
 
 // ---------------------------------------------
 // string UIGroup = "Lighting Properties"; UI 300+

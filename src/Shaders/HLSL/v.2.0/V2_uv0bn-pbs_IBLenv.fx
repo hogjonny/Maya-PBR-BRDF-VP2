@@ -14,7 +14,7 @@
 // some textures may override this value, but most textures will follow whatever we have defined here
 // If you wish to optimize performance (at the cost of reduced quality), you can set NumberOfMipMaps below to 1
 
-static const float cg_PI = 3.141592666f;
+static const float cg_PI = 3.141592f;
 
 #define NumberOfMipMaps 0
 #define ROUGHNESS_BIAS 0.005
@@ -218,16 +218,32 @@ cbuffer UpdatePerObject : register(b1)
 	HOG_PROPERTY_MATERIAL_IOR
 	// materialBumpIntensity:		scalar 0..1 (soft)
 	HOG_PROPERTY_MATERIAL_BUMPINTENSITY
-	// useParallaxOcclusionMapping:	bool
-	HOG_PROPERTY_POM
-	// materialPomHeightScale:		float
-	HOG_PROPERTY_MATERIAL_POMHEIGHTSCALE
 	// useVertexC0_RGBA:			bool
 	HOG_PROPERTY_USE_VERTEX_C0_RGBA
 	// hasVertexAlpha:				bool
 	HOG_PROPERTY_HAS_VERTEX_ALPHA
 	// useVertexC1_AO:				bool
 	HOG_PROPERTY_USE_VERTEX_C1_AO
+
+	// "Parallax Occlusion" UI Group
+	// useParallaxOcclusionMapping:	bool
+	HOG_PROPERTY_POM
+	// materialPomHeightScale:		float
+	HOG_PROPERTY_MATERIAL_POMHEIGHTSCALE
+	// usePOMselfShadow:			bool
+	HOG_PROPERTY_USEPOMSHDW  
+	// pomMinSamples:				float
+	HOG_PROPERTY_MATERIAL_POMMINSAMPLES
+	// pomMaxSamples:				float
+	HOG_PROPERTY_MATERIAL_POMMAXSAMPLES
+	// selfOccOffset:				float
+	HOG_PROPERTY_MATERIAL_POMOCCOFFSET  
+	// selfOccStrength:				float
+	HOG_PROPERTY_MATERIAL_POMOCCSTRENGTH  
+	// usePOMsoftShadow:			bool
+	HOG_PROPERTY_USEPOMSOFTSHDW	  
+	// pomSoftShadowAmount:				float
+	HOG_PROPERTY_MATERIAL_POMSOFTSHDWAMT  
 
 	// "Lighting Properties"
 	// materialAmbient:				sRGB
@@ -468,20 +484,60 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	// Parallax Releif Mapping
 	// http://sunandblackcat.com/tipFullView.php?topicid=28
 
-	// To Do: Expose as surface parameters?
-	int nMaxSamples = 75;
-	int nMinSamples = 25;
-
 	// these are also later used in POM self-occlusion
 	float lastSampledHeight = 1;
 	float fStepSize = 0.0;
 	float2 finalTexOffset = 0;
+	float3x3 worldToTangent;
+
+	// To Do: expose this in the UI
+	int pomLODThreshold = 0;
+	float2 pomTextureDimensions = float2(1024, 1024);
+	float  minTexCoordDelta;
+	float2 deltaTexCoords;
+
+	float2 dxSize, dySize;
+	float2 dx, dy;
+
+	float  pomMipLevel;
+	float  pomMipLevelInt;    // mip level integer portion
+	float  pomMipLevelFrac;   // mip level fractional amount for blending in between levels
 
 	if (useParallaxOcclusionMapping)
 	// To Do: make this a function call in parallax.sif
 	// POM self shadowing
 	// POM Clipping
 	{
+		// Compute the current gradients:
+		float2 texCoordsPerSize = baseUV * pomTextureDimensions;
+
+		// Precompute texture gradients since we cannot compute texture
+		// gradients in a loop. Texture gradients are used to select the right
+		// mipmap level when sampling textures. Then we use Texture2D.SampleGrad()
+		// instead of Texture2D.Sample().
+		//dx = ddx(baseUV);
+		//dy = ddy(baseUV);
+		// Compute all 4 derivatives in x and y in a single instruction to optimize:
+		float4(dxSize, dx) = ddx(float4(texCoordsPerSize, baseUV));
+		float4(dySize, dy) = ddy(float4(texCoordsPerSize, baseUV));
+
+		// Find min of change in u and v across quad: compute du and dv magnitude across quad
+		deltaTexCoords = dxSize * dxSize + dySize * dySize;
+
+		// Standard mipmapping uses max here
+		minTexCoordDelta = max(deltaTexCoords.x, deltaTexCoords.y);
+
+		// Compute the current mip level  (* 0.5 is effectively computing a square root before )
+		pomMipLevel = max( 0.5f * log2( minTexCoordDelta ), 0.0f);
+
+		// Start the current sample located at the input texture coordinate, which would correspond
+		// to computing a bump mapping result:
+		float2 texSample = baseUV;
+
+		// Multiplier for visualizing the level of detail (see notes for 'nLODThreshold' variable
+		// for how that is done visually)
+		float4 pomLODColoring = float4(1, 1, 3, 1);
+
 		float3 viewDirW = -p.m_View.xyz;
 		//float3 viewDirTS = mul(viewDirW, p.m_WTMtx);
 
@@ -489,13 +545,12 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 		// Interpolating normal can unnormalize it, so normalize it.
 		p.m_NormalW = normalize(p.m_NormalW);
 
-		float3x3 worldToTangent;
 		// T
 		worldToTangent[0] = normalize(p.m_TangentW - dot(p.m_TangentW, p.m_NormalW) * p.m_NormalW);
 		// B
 		//worldToTangent[1] = cross(p.m_NormalW, worldToTangent[0]);
 		worldToTangent[1] = -p.m_BinormalW;  // had to -, why!?
-											 // N
+		// N
 		worldToTangent[2] = p.m_NormalW;
 
 		worldToTangent = transpose(worldToTangent);
@@ -505,20 +560,13 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 		float2 maxParallaxOffset = -viewDirTS.xy * materialPomHeightScale / viewDirTS.z;
 
 		// sampleCount
-		int nNumSamples = (int)lerp(nMinSamples, nMaxSamples, dot(p.m_View.xyz, p.m_NormalW));
+		int pomNumSamples = (int)lerp(pomMinSamples, pomMaxSamples, dot(p.m_View.xyz, p.m_NormalW));
 
 		// zStep
-		fStepSize = 1.0 / (float)nNumSamples;
+		fStepSize = 1.0 / (float)pomNumSamples;
 
 		// texStep
 		float2 vMaxOffset = maxParallaxOffset * fStepSize;
-
-		// Precompute texture gradients since we cannot compute texture
-		// gradients in a loop. Texture gradients are used to select the right
-		// mipmap level when sampling textures. Then we use Texture2D.SampleGrad()
-		// instead of Texture2D.Sample().
-		float2 dx = ddx(p.m_Uv0);
-		float2 dy = ddy(p.m_Uv0);
 
 		// sampleIndex
 		int nCurrSample = 0;
@@ -531,7 +579,7 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 		float prevHeight = 0.0f;
 
 		// Ray trace the heightfield.
-		while (nCurrSample < nNumSamples + 1)
+		while (nCurrSample < pomNumSamples + 1)
 		{
 			// fetch height
 			currHeight = heightMap.SampleGrad(SamplerAnisoWrap, p.m_Uv0 + currTexOffset, dx, dy).r;
@@ -548,7 +596,7 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 				lastSampledHeight = prevHeight + t * vMaxOffset;
 
 				// Exit loop.
-				nCurrSample = nNumSamples + 1;
+				nCurrSample = pomNumSamples + 1;
 			}
 			else
 			{
@@ -831,27 +879,20 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 			// Implementing just on the directional light to begin with
 			// To Do: make this a function call in parallax.sif
 
-			// To Do: Put usePOMselfShadow as checkbox in UI
-			bool usePOMselfShadow = true;
-			// same
-			//float selfOcc = 0.0;
-			// same
-			float selfOccOffset = 0.1;
-			// same
-			float selfOccStrength = 1.0; //range 0..1
-
 			if (useParallaxOcclusionMapping && usePOMselfShadow)
 			{
-				float2 dx = ddx(p.m_Uv0);
-				float2 dy = ddy(p.m_Uv0);
+				dx = ddx(p.m_Uv0);
+				dy = ddy(p.m_Uv0);
 
-				float fOcclusionLimit = length(lights[i].m_Direction.xy) / lights[i].m_Direction.z;
+				float3 lightDirTS = mul(lights[i].m_Direction.xyz, worldToTangent);
+
+				float fOcclusionLimit = length(lightDirTS.xy) / lightDirTS.z;
 				fOcclusionLimit *= materialPomHeightScale;
 
-				float2 vOcclusionOffsetDir = normalize(lights[i].m_Direction.xy);
+				float2 vOcclusionOffsetDir = normalize(-lightDirTS.xy);
 				float2 vMaxOcclusionOffset = vOcclusionOffsetDir * fOcclusionLimit;
 
-				int nNumSamplesOcclusion = (int)lerp(nMaxSamples, nMinSamples, NdotL);
+				int nNumSamplesOcclusion = (int)lerp(pomMaxSamples, pomMinSamples, NdotL);
 				float fStepSizeOcclusion = (1.0 - lastSampledHeight) / (float)nNumSamplesOcclusion;
 
 				float fCurrRayHeightOcclusion = lastSampledHeight + selfOccOffset;

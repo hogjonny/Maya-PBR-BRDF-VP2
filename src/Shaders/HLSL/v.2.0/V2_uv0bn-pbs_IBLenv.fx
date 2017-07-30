@@ -490,18 +490,26 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	float2 finalTexOffset = 0;
 	float3x3 worldToTangent;
 
-	// To Do: expose this in the UI
-	int pomLODThreshold = 0;
+	// To Do: expose these in the UI
+	// The mip level id for transitioning between the full computation
+	// for parallax occlusion mapping and the bump mapping computation
+	bool pomVisualizeLOD = false;
+	int pomLODThreshold = 3;
 	float2 pomTextureDimensions = float2(1024, 1024);
 	float  minTexCoordDelta;
 	float2 deltaTexCoords;
 
+	// store gradients
 	float2 dxSize, dySize;
 	float2 dx, dy;
 
 	float  pomMipLevel;
 	float  pomMipLevelInt;    // mip level integer portion
 	float  pomMipLevelFrac;   // mip level fractional amount for blending in between levels
+
+	// Multiplier for visualizing the level of detail (see notes for 'nLODThreshold' variable
+	// for how that is done visually)
+	float4 pomLODColoring = float4(1, 1, 3, 1);
 
 	if (useParallaxOcclusionMapping)
 	// To Do: make this a function call in parallax.sif
@@ -534,86 +542,105 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 		// to computing a bump mapping result:
 		float2 texSample = baseUV;
 
-		// Multiplier for visualizing the level of detail (see notes for 'nLODThreshold' variable
-		// for how that is done visually)
-		float4 pomLODColoring = float4(1, 1, 3, 1);
-
-		float3 viewDirW = -p.m_View.xyz;
-		//float3 viewDirTS = mul(viewDirW, p.m_WTMtx);
-
-		// Build orthonormal basis.
-		// Interpolating normal can unnormalize it, so normalize it.
-		p.m_NormalW = normalize(p.m_NormalW);
-
-		// T
-		worldToTangent[0] = normalize(p.m_TangentW - dot(p.m_TangentW, p.m_NormalW) * p.m_NormalW);
-		// B
-		//worldToTangent[1] = cross(p.m_NormalW, worldToTangent[0]);
-		worldToTangent[1] = -p.m_BinormalW;  // had to -, why!?
-		// N
-		worldToTangent[2] = p.m_NormalW;
-
-		worldToTangent = transpose(worldToTangent);
-
-		float3 viewDirTS = mul(viewDirW, worldToTangent);
-
-		float2 maxParallaxOffset = -viewDirTS.xy * materialPomHeightScale / viewDirTS.z;
-
-		// sampleCount
-		int pomNumSamples = (int)lerp(pomMinSamples, pomMaxSamples, dot(p.m_View.xyz, p.m_NormalW));
-
-		// zStep
-		fStepSize = 1.0 / (float)pomNumSamples;
-
-		// texStep
-		float2 vMaxOffset = maxParallaxOffset * fStepSize;
-
-		// sampleIndex
-		int nCurrSample = 0;
-
-		float2 currTexOffset = 0;
-		float2 prevTexOffset = 0;
-		float currRayZ = 1.0f - fStepSize;
-		float prevRayZ = 1.0f;
-		float currHeight = 0.0f;
-		float prevHeight = 0.0f;
-
-		// Ray trace the heightfield.
-		while (nCurrSample < pomNumSamples + 1)
+		if (pomMipLevel <= (float)pomLODThreshold)
 		{
-			// fetch height
-			currHeight = heightMap.SampleGrad(SamplerAnisoWrap, p.m_Uv0 + currTexOffset, dx, dy).r;
+			float3 viewDirW = -p.m_View.xyz;
+			//float3 viewDirTS = mul(viewDirW, p.m_WTMtx);
 
-			// Did we cross the height profile?
-			if (currHeight > currRayZ)
+			// Build orthonormal basis.
+			// Interpolating normal can unnormalize it, so normalize it.
+			p.m_NormalW = normalize(p.m_NormalW);
+
+			// T
+			worldToTangent[0] = normalize(p.m_TangentW - dot(p.m_TangentW, p.m_NormalW) * p.m_NormalW);
+			// B
+			//worldToTangent[1] = cross(p.m_NormalW, worldToTangent[0]);
+			worldToTangent[1] = -p.m_BinormalW;  // had to -, why!?
+			// N
+			worldToTangent[2] = p.m_NormalW;
+
+			worldToTangent = transpose(worldToTangent);
+
+			float3 viewDirTS = mul(viewDirW, worldToTangent);
+
+			float2 maxParallaxOffset = -viewDirTS.xy * materialPomHeightScale / viewDirTS.z;
+
+			// sampleCount
+			int pomNumSamples = (int)lerp(pomMinSamples, pomMaxSamples, dot(p.m_View.xyz, p.m_NormalW));
+
+			// zStep
+			fStepSize = 1.0 / (float)pomNumSamples;
+
+			// texStep
+			float2 vMaxOffset = maxParallaxOffset * fStepSize;
+
+			// sampleIndex
+			int nCurrSample = 0;
+
+			float2 currTexOffset = 0;
+			float2 prevTexOffset = 0;
+			float currRayZ = 1.0f - fStepSize;
+			float prevRayZ = 1.0f;
+			float currHeight = 0.0f;
+			float prevHeight = 0.0f;
+
+			// Ray trace the heightfield.
+			while (nCurrSample < pomNumSamples + 1)
 			{
-				// Do ray/line segment intersection and compute final tex offset.
-				float t = (prevHeight - prevRayZ) /
-					(prevHeight - currHeight + currRayZ - prevRayZ);
+				// fetch height
+				currHeight = heightMap.SampleGrad(SamplerAnisoWrap, baseUV + currTexOffset, dx, dy).r;
 
-				finalTexOffset = prevTexOffset + t * vMaxOffset;
+				// Did we cross the height profile?
+				if (currHeight > currRayZ)
+				{
+					// Do ray/line segment intersection and compute final tex offset.
+					float t = (prevHeight - prevRayZ) /
+						(prevHeight - currHeight + currRayZ - prevRayZ);
 
-				lastSampledHeight = prevHeight + t * vMaxOffset;
+					finalTexOffset = prevTexOffset + t * vMaxOffset;
 
-				// Exit loop.
-				nCurrSample = pomNumSamples + 1;
+					lastSampledHeight = prevHeight + t * vMaxOffset;
+
+					// Exit loop.
+					nCurrSample = pomNumSamples + 1;
+				}
+				else
+				{
+					++nCurrSample;
+					prevTexOffset = currTexOffset;
+					prevRayZ = currRayZ;
+					prevHeight = currHeight;
+					currTexOffset += vMaxOffset;
+					// Negative because we are going "deeper" into the surface.
+					currRayZ -= fStepSize;
+
+					lastSampledHeight = currHeight;
+				}
 			}
-			else
-			{
-				++nCurrSample;
-				prevTexOffset = currTexOffset;
-				prevRayZ = currRayZ;
-				prevHeight = currHeight;
-				currTexOffset += vMaxOffset;
-				// Negative because we are going "deeper" into the surface.
-				currRayZ -= fStepSize;
+			// Use these texture coordinates for subsequent texture
+			// fetches (color map, normal map, etc.).
+			baseUV += finalTexOffset;
 
-				lastSampledHeight = currHeight;
+			// Lerp to bump mapping only if we are in between, transition section:
+
+			pomLODColoring = float4(1, 1, 1, 1);
+
+			if (pomMipLevel > (float)(pomLODThreshold - 1))
+			{
+				// Lerp based on the fractional part:
+				pomMipLevelFrac = modf(pomMipLevel, pomMipLevelInt);
+
+				if (pomVisualizeLOD)
+				{
+					// For visualizing: lerping from regular POM-resulted color through blue color for transition layer:
+					pomLODColoring = float4(1, 1, max(1, 2 * pomMipLevelFrac), 1);
+				}
+
+				// Lerp the texture coordinate from parallax occlusion mapped coordinate to bump mapping
+				// smoothly based on the current mip level:
+				baseUV = lerp(baseUV, p.m_Uv0, pomMipLevelFrac);
 			}
 		}
-		// Use these texture coordinates for subsequent texture
-		// fetches (color map, normal map, etc.).
-		baseUV += finalTexOffset;
 	}
 
 	// Parallax Mapping and Self-Shadowing

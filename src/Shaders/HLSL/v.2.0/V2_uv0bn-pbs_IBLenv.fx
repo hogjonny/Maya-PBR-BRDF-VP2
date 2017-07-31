@@ -479,6 +479,7 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	// with help from:  http://www.d3dcoder.net/Data/Resources/ParallaxOcclusion.pdf
 	// To Do: Put all of this in a function and include file (after it is working)
 	float2 baseUV = p.m_Uv0;
+	float2 pomSsUV = baseUV;
 
 	// Parallax Mapping
 	// Parallax Releif Mapping
@@ -486,7 +487,7 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 
 	// these are also later used in POM self-occlusion
 	float lastSampledHeight = 1;
-	float fStepSize = 0.0;
+	float zStepSize = 0.0;
 	float2 finalTexOffset = 0;
 	float3x3 worldToTangent;
 
@@ -502,6 +503,11 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	// store gradients
 	float2 dxSize, dySize;
 	float2 dx, dy;
+	// Compute the current gradients:
+	float2 texCoordsPerSize = baseUV * pomTextureDimensions;
+	// Compute all 4 derivatives in x and y in a single instruction to optimize:
+	float4(dxSize, dx) = ddx(float4(texCoordsPerSize, baseUV));
+	float4(dySize, dy) = ddy(float4(texCoordsPerSize, baseUV));
 
 	float  pomMipLevel;
 	float  pomMipLevelInt;    // mip level integer portion
@@ -516,8 +522,6 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	// POM self shadowing
 	// POM Clipping
 	{
-		// Compute the current gradients:
-		float2 texCoordsPerSize = baseUV * pomTextureDimensions;
 
 		// Precompute texture gradients since we cannot compute texture
 		// gradients in a loop. Texture gradients are used to select the right
@@ -525,9 +529,6 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 		// instead of Texture2D.Sample().
 		//dx = ddx(baseUV);
 		//dy = ddy(baseUV);
-		// Compute all 4 derivatives in x and y in a single instruction to optimize:
-		float4(dxSize, dx) = ddx(float4(texCoordsPerSize, baseUV));
-		float4(dySize, dy) = ddy(float4(texCoordsPerSize, baseUV));
 
 		// Find min of change in u and v across quad: compute du and dv magnitude across quad
 		deltaTexCoords = dxSize * dxSize + dySize * dySize;
@@ -537,10 +538,6 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 
 		// Compute the current mip level  (* 0.5 is effectively computing a square root before )
 		pomMipLevel = max( 0.5f * log2( minTexCoordDelta ), 0.0f);
-
-		// Start the current sample located at the input texture coordinate, which would correspond
-		// to computing a bump mapping result:
-		float2 texSample = baseUV;
 
 		if (pomMipLevel <= (float)pomLODThreshold)
 		{
@@ -569,23 +566,23 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 			int pomNumSamples = (int)lerp(pomMinSamples, pomMaxSamples, dot(p.m_View.xyz, p.m_NormalW));
 
 			// zStep
-			fStepSize = 1.0 / (float)pomNumSamples;
+			zStepSize = 1.0 / (float)pomNumSamples;
 
 			// texStep
-			float2 vMaxOffset = maxParallaxOffset * fStepSize;
+			float2 vMaxOffset = maxParallaxOffset * zStepSize;
 
 			// sampleIndex
-			int nCurrSample = 0;
+			int currSampleIndex = 0;
 
 			float2 currTexOffset = 0;
 			float2 prevTexOffset = 0;
-			float currRayZ = 1.0f - fStepSize;
+			float currRayZ = 1.0f - zStepSize;
 			float prevRayZ = 1.0f;
 			float currHeight = 0.0f;
 			float prevHeight = 0.0f;
 
 			// Ray trace the heightfield.
-			while (nCurrSample < pomNumSamples + 1)
+			while (currSampleIndex < pomNumSamples + 1)
 			{
 				// fetch height
 				currHeight = heightMap.SampleGrad(SamplerAnisoWrap, baseUV + currTexOffset, dx, dy).r;
@@ -602,17 +599,17 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 					lastSampledHeight = prevHeight + t * vMaxOffset;
 
 					// Exit loop.
-					nCurrSample = pomNumSamples + 1;
+					currSampleIndex = pomNumSamples + 1;
 				}
 				else
 				{
-					++nCurrSample;
+					++currSampleIndex;
 					prevTexOffset = currTexOffset;
 					prevRayZ = currRayZ;
 					prevHeight = currHeight;
 					currTexOffset += vMaxOffset;
 					// Negative because we are going "deeper" into the surface.
-					currRayZ -= fStepSize;
+					currRayZ -= zStepSize;
 
 					lastSampledHeight = currHeight;
 				}
@@ -620,6 +617,9 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 			// Use these texture coordinates for subsequent texture
 			// fetches (color map, normal map, etc.).
 			baseUV += finalTexOffset;
+
+			// store this value off, for pom soft shadowing
+			pomSsUV = -baseUV;
 
 			// Lerp to bump mapping only if we are in between, transition section:
 
@@ -843,6 +843,7 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 
 	//going to just use a constant value for shadow instead (to disregard)
 	float4 shadow = (1.0f, 1.0f, 1.0f, 1.0f);
+	float selfOccShadow = 1.0;
 
 	// This is here for reference, the engine directional sunlight
 	// We need this in maya - just let the artist use a bound light as directional
@@ -868,10 +869,11 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	{
 
 		if (lights[i].m_Enabled == false)
-			// if the light is disabled/hidden in Maya skip it
+		// if the light is disabled/hidden in Maya skip it
 		{
 			continue;
 		}
+
 		if (lights[i].m_Type == 4 || lights[i].m_Type == 1) //Directional
 		{
 			// half angle of light direction and the view
@@ -901,63 +903,83 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 				specular *= shadow;
 			}
 
-			//**
 			// Parallax Occlusion Self-Shadowing
 			// Implementing just on the directional light to begin with
 			// To Do: make this a function call in parallax.sif
 
 			if (useParallaxOcclusionMapping && usePOMselfShadow)
-			{
-				dx = ddx(p.m_Uv0);
-				dy = ddy(p.m_Uv0);
-
-				float3 lightDirTS = mul(lights[i].m_Direction.xyz, worldToTangent);
-
-				float fOcclusionLimit = length(lightDirTS.xy) / lightDirTS.z;
-				fOcclusionLimit *= materialPomHeightScale;
-
-				float2 vOcclusionOffsetDir = normalize(-lightDirTS.xy);
-				float2 vMaxOcclusionOffset = vOcclusionOffsetDir * fOcclusionLimit;
-
-				int nNumSamplesOcclusion = (int)lerp(pomMaxSamples, pomMinSamples, NdotL);
-				float fStepSizeOcclusion = (1.0 - lastSampledHeight) / (float)nNumSamplesOcclusion;
-
-				float fCurrRayHeightOcclusion = lastSampledHeight + selfOccOffset;
-				float2 vCurrOffsetOcclusion = finalTexOffset;
-				float2 vLastOffsetOcclusion = finalTexOffset;
-
-				float fLastSampledHeightOcclusion = lastSampledHeight + selfOccOffset;
-				float fCurrSampledHeightOcclusion = lastSampledHeight + selfOccOffset;
-
-				int nCurrSampleOcclusion = 0;
-				float selfOccShadow = 1.0;
-
-				while (nCurrSampleOcclusion < nNumSamplesOcclusion)
+				
+				if (usePOMsoftShadow)
 				{
-					fCurrSampledHeightOcclusion = heightMap.SampleGrad(SamplerAnisoWrap, p.m_Uv0 + vCurrOffsetOcclusion, dx, dy).r;
-					if (fCurrSampledHeightOcclusion > fCurrRayHeightOcclusion)
+					float3 lightDirTS = mul(lights[i].m_Direction.xyz, worldToTangent);
+					float2 lightRayTS = lightDirTS.xy * materialPomHeightScale;
+
+					// Compute the soft blurry shadows taking into account self-occlusion for 
+					// features of the height field:
+
+					float sh0 = heightMap.SampleGrad(SamplerAnisoWrap, pomSsUV, dx, dy).r;
+					float shA = (heightMap.SampleGrad(SamplerAnisoWrap, pomSsUV + lightRayTS * 0.88, dx, dy).r -sh0 - 0.88) * 1 * pomSoftShadowAmount;
+					float sh9 = (heightMap.SampleGrad(SamplerAnisoWrap, pomSsUV + lightRayTS * 0.77, dx, dy).r - sh0 - 0.77) * 2 * pomSoftShadowAmount;
+					float sh8 = (heightMap.SampleGrad(SamplerAnisoWrap, pomSsUV + lightRayTS * 0.66, dx, dy).r - sh0 - 0.66) * 4 * pomSoftShadowAmount;
+					float sh7 = (heightMap.SampleGrad(SamplerAnisoWrap, pomSsUV + lightRayTS * 0.55, dx, dy).r - sh0 - 0.55) * 6 * pomSoftShadowAmount;
+					float sh6 = (heightMap.SampleGrad(SamplerAnisoWrap, pomSsUV + lightRayTS * 0.44, dx, dy).r - sh0 - 0.44) * 8 * pomSoftShadowAmount;
+					float sh5 = (heightMap.SampleGrad(SamplerAnisoWrap, pomSsUV + lightRayTS * 0.33, dx, dy).r - sh0 - 0.33) * 10 * pomSoftShadowAmount;
+					float sh4 = (heightMap.SampleGrad(SamplerAnisoWrap, pomSsUV + lightRayTS * 0.22, dx, dy).r - sh0 - 0.22) * 12 * pomSoftShadowAmount;
+
+					// Compute the actual shadow strength:
+					selfOccShadow = max(max(max(max(max(max(shA, sh9), sh8), sh7), sh6), sh5), sh4);
+
+					// The previous computation overbrightens the image, let's adjust for that:
+					selfOccShadow = (1.0 - selfOccShadow) * 0.6 + 0.4;
+				}
+
+				else
+				{
+					float3 lightDirTS = mul(lights[i].m_Direction.xyz, worldToTangent);
+
+					float occlusionLimit = length(lightDirTS.xy) / lightDirTS.z;
+					occlusionLimit *= materialPomHeightScale;
+
+					float2 occOffsetDir = normalize(-lightDirTS.xy);
+					float2 maxOccOffset = occOffsetDir * occlusionLimit;
+
+					int nNumSamplesOcclusion = (int)lerp(pomMaxSamples, pomMinSamples, NdotL);
+					float fStepSizeOcclusion = (1.0 - lastSampledHeight) / (float)nNumSamplesOcclusion;
+
+					float fCurrRayHeightOcclusion = lastSampledHeight + selfOccOffset;
+					float2 vCurrOffsetOcclusion = finalTexOffset;
+					float2 vLastOffsetOcclusion = finalTexOffset;
+
+					float fLastSampledHeightOcclusion = lastSampledHeight + selfOccOffset;
+					float fCurrSampledHeightOcclusion = lastSampledHeight + selfOccOffset;
+
+					int nCurrSampleOcclusion = 0;
+
+					while (nCurrSampleOcclusion < nNumSamplesOcclusion)
 					{
-						if (usePOMselfShadow) selfOccShadow = 1.0 - selfOccStrength;
+						fCurrSampledHeightOcclusion = heightMap.SampleGrad(SamplerAnisoWrap, p.m_Uv0 + vCurrOffsetOcclusion, dx, dy).r;
+						if (fCurrSampledHeightOcclusion > fCurrRayHeightOcclusion)
+						{
+							selfOccShadow = 1.0 - selfOccStrength;
 
-						nCurrSampleOcclusion = nNumSamplesOcclusion + 1;
-					}
-					else
-					{
-						nCurrSampleOcclusion++;
+							nCurrSampleOcclusion = nNumSamplesOcclusion + 1;
+						}
+						else
+						{
+							nCurrSampleOcclusion++;
 
-						fCurrRayHeightOcclusion += fStepSize;
+							fCurrRayHeightOcclusion += zStepSize;
 
-						vLastOffsetOcclusion = vCurrOffsetOcclusion;
-						vCurrOffsetOcclusion -= fStepSizeOcclusion * vMaxOcclusionOffset;
+							vLastOffsetOcclusion = vCurrOffsetOcclusion;
+							vCurrOffsetOcclusion -= fStepSizeOcclusion * maxOccOffset;
 
-						fLastSampledHeightOcclusion = fCurrSampledHeightOcclusion;
+							fLastSampledHeightOcclusion = fCurrSampledHeightOcclusion;
+						}
 					}
 				}
 
-				diffuse *= selfOccShadow;
-				specular *= selfOccShadow;
-			}
-			//*/
+			diffuse *= selfOccShadow;
+			specular *= selfOccShadow;
 		}
 		else if (lights[i].m_Type == 3) //Point
 		{

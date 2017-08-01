@@ -227,11 +227,13 @@ cbuffer UpdatePerObject : register(b1)
 
 	// "Parallax Occlusion" UI Group
 	// useParallaxOcclusionMapping:	bool
-	HOG_PROPERTY_POM
+	HOG_PROPERTY_MATERIAL_USEPOM
 	// materialPomHeightScale:		float
 	HOG_PROPERTY_MATERIAL_POMHEIGHTSCALE
 	// usePOMselfShadow:			bool
-	HOG_PROPERTY_USEPOMSHDW  
+	//HOG_PROPERTY_MATERIAL_USEPOMSHDW
+	// parallaxOccShadowType:		int
+	HOG_PROPERTY_MATERIAL_POMSHDWTYPE
 	// pomMinSamples:				float
 	HOG_PROPERTY_MATERIAL_POMMINSAMPLES
 	// pomMaxSamples:				float
@@ -912,7 +914,7 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 			// Implementing just on the directional light to begin with
 			// To Do: make this a function call in parallax.sif
 
-			if (useParallaxOcclusionMapping && usePOMselfShadow)
+			if ( useParallaxOcclusionMapping && (parallaxOccShadowType > 0) )
 				// this doesn't work well, not sure why exactly ... I mean it does something, but not what I'd expect.
 				// 1) it creates shadows, but they aren't as soft as I would have expected
 				// 2) they blow up (stepping artifacts) if the height is increased too much
@@ -922,56 +924,72 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 				//    - can add weighting per-step to make softer?
 				//    - maybe we could bias the miplevel?
 				//    - and I need to make adjustments to which paramters are used and how so the two are more similar usage
-				if (usePOMsoftShadow)
+				if (parallaxOccShadowType > 0)
 				{
-					float3 lightDirTS = mul(lights[i].m_Direction.xyz, worldToTangent);
-
-					float2 lightRayTS = ( float2(lightDirTS.x, lightDirTS.y) ) * materialPomHeightScale;					float h0 = 1 - heightMap.Sample(SamplerAnisoWrap, pomSsUV).r;
-					float h = h0;					h = min(1.0, 1 - heightMap.Sample(SamplerAnisoWrap, pomSsUV + 1.0 * lightRayTS).r);					h = min(h, 1 - heightMap.Sample(SamplerAnisoWrap, pomSsUV + 0.8 * lightRayTS).r);					h = min(h, 1 - heightMap.Sample(SamplerAnisoWrap, pomSsUV + 0.6 * lightRayTS).r);					h = min(h, 1 - heightMap.Sample(SamplerAnisoWrap, pomSsUV + 0.4 * lightRayTS).r);					h = min(h, 1 - heightMap.Sample(SamplerAnisoWrap, pomSsUV + 0.2 * lightRayTS).r);
-					selfOccShadow = 1.0 - saturate( (h0 - h) * selfOccStrength );
-				}
-
-				else
-				{
-					float3 lightDirTS = mul(lights[i].m_Direction.xyz, worldToTangent);
-
-					float occlusionLimit = length(lightDirTS.xy) / lightDirTS.z;
-					occlusionLimit *= materialPomHeightScale;
-
-					float2 occOffsetDir = normalize(-lightDirTS.xy);
-					float2 maxOccOffset = occOffsetDir * occlusionLimit;
-
-					int nNumSamplesOcclusion = (int)lerp(pomMaxSamples, pomMinSamples, NdotL);
-					float fStepSizeOcclusion = (1.0 - lastSampledHeight) / (float)nNumSamplesOcclusion;
-
-					float fCurrRayHeightOcclusion = lastSampledHeight + selfOccOffset;
-					float2 vCurrOffsetOcclusion = finalTexOffset;
-					float2 vLastOffsetOcclusion = finalTexOffset;
-
-					float fLastSampledHeightOcclusion = lastSampledHeight + selfOccOffset;
-					float fCurrSampledHeightOcclusion = lastSampledHeight + selfOccOffset;
-
-					int nCurrSampleOcclusion = 0;
-
-					while (nCurrSampleOcclusion < nNumSamplesOcclusion)
+					if (parallaxOccShadowType == 1)
 					{
-						fCurrSampledHeightOcclusion = heightMap.SampleGrad(SamplerAnisoWrap, p.m_Uv0 + vCurrOffsetOcclusion, dx, dy).r;
-						if (fCurrSampledHeightOcclusion > fCurrRayHeightOcclusion)
+						float3 lightDirTS = mul(lights[i].m_Direction.xyz, worldToTangent);
+
+						float2 lightRayTS = (float2(lightDirTS.x, lightDirTS.y)) * materialPomHeightScale;
+
+						float h0 = 1 - heightMap.Sample(SamplerAnisoWrap, pomSsUV).r;
+						float h = h0;
+
+						h = min(1.0, 1 - heightMap.Sample(SamplerAnisoWrap, pomSsUV + 1.0 * lightRayTS).r);
+						h = min(h, 1 - heightMap.Sample(SamplerAnisoWrap, pomSsUV + 0.8 * lightRayTS).r);
+						h = min(h, 1 - heightMap.Sample(SamplerAnisoWrap, pomSsUV + 0.6 * lightRayTS).r);
+						h = min(h, 1 - heightMap.Sample(SamplerAnisoWrap, pomSsUV + 0.4 * lightRayTS).r);
+						h = min(h, 1 - heightMap.Sample(SamplerAnisoWrap, pomSsUV + 0.2 * lightRayTS).r);
+
+						selfOccShadow = 1.0 - saturate((h0 - h) * selfOccStrength);
+					}
+					if (parallaxOccShadowType == 2)
+					{
+						//
+					}
+
+					if (parallaxOccShadowType == 3)
+					{
+						float3 lightDirTS = mul(lights[i].m_Direction.xyz, worldToTangent);
+
+						float occlusionLimit = length(lightDirTS.xy) / lightDirTS.z;
+						occlusionLimit *= materialPomHeightScale;
+
+						float2 occOffsetDir = normalize(-lightDirTS.xy);
+						float2 maxOccOffset = occOffsetDir * occlusionLimit;
+
+						int nNumSamplesOcclusion = (int)lerp(pomMaxSamples, pomMinSamples, NdotL);
+						float fStepSizeOcclusion = (1.0 - lastSampledHeight) / (float)nNumSamplesOcclusion;
+
+						float fCurrRayHeightOcclusion = lastSampledHeight + selfOccOffset;
+						float2 vCurrOffsetOcclusion = finalTexOffset;
+						float2 vLastOffsetOcclusion = finalTexOffset;
+
+						float fLastSampledHeightOcclusion = lastSampledHeight + selfOccOffset;
+						float fCurrSampledHeightOcclusion = lastSampledHeight + selfOccOffset;
+
+						int nCurrSampleOcclusion = 0;
+
+						while (nCurrSampleOcclusion < nNumSamplesOcclusion)
 						{
-							selfOccShadow = 1.0 - selfOccStrength;
+							fCurrSampledHeightOcclusion = heightMap.SampleGrad(SamplerAnisoWrap, p.m_Uv0 + vCurrOffsetOcclusion, dx, dy).r;
+							if (fCurrSampledHeightOcclusion > fCurrRayHeightOcclusion)
+							{
+								selfOccShadow = 1.0 - selfOccStrength;
 
-							nCurrSampleOcclusion = nNumSamplesOcclusion + 1;
-						}
-						else
-						{
-							nCurrSampleOcclusion++;
+								nCurrSampleOcclusion = nNumSamplesOcclusion + 1;
+							}
+							else
+							{
+								nCurrSampleOcclusion++;
 
-							fCurrRayHeightOcclusion += zStepSize;
+								fCurrRayHeightOcclusion += zStepSize;
 
-							vLastOffsetOcclusion = vCurrOffsetOcclusion;
-							vCurrOffsetOcclusion -= fStepSizeOcclusion * maxOccOffset;
+								vLastOffsetOcclusion = vCurrOffsetOcclusion;
+								vCurrOffsetOcclusion -= fStepSizeOcclusion * maxOccOffset;
 
-							fLastSampledHeightOcclusion = fCurrSampledHeightOcclusion;
+								fLastSampledHeightOcclusion = fCurrSampledHeightOcclusion;
+							}
 						}
 					}
 				}

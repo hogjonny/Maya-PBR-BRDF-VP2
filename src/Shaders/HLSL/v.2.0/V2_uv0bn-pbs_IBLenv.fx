@@ -308,7 +308,7 @@ int g_DebugMode
 <
 	string UIGroup = "DEBUG [Preview]";
 	string UIWidget = "Slider";
-	string UIFieldNames = "o.m_Color.rgb:baseColorTex.rgb:baseColorTex.aaa:bColorLin.rgb:mColorLin.rgb:p.m_albedoRGBA.rgb:p.m_albedoRGBA.aaa:pbrMetalness.xxx:pbrRoughness.xxx:pbrAO.xxx:pbrCavity.xxx:baseNormalMap.xyz:normalRaw.xyz:F0.xxx:bClum.xxx:Ctint.rgb:Cspec0.rgb:diffuse.rgb:specular.rgb:pbrRoughness.xxx:roughA.xxx:roughA2.xxx:roughnessBiasedA.xxx:roughnessBiasedA2.xxx:NdotV:ambDomeColor.rgb:ambDomeLinColor.rgb:diffEnvLin.rgb:specEnvLin.rgb:cSpecLin:baseUV";
+	string UIFieldNames = "o.m_Color.rgb:baseColorTex.rgb:baseColorTex.aaa:bColorLin.rgb:mColorLin.rgb:p.m_albedoRGBA.rgb:p.m_albedoRGBA.aaa:pbrMetalness.xxx:pbrRoughness.xxx:pbrAO.xxx:pbrCavity.xxx:baseNormalMap.xyz:normalRaw.xyz:F0.xxx:bClum.xxx:Ctint.rgb:Cspec0.rgb:diffuse.rgb:specular.rgb:pbrRoughness.xxx:roughA.xxx:roughA2.xxx:roughnessBiasedA.xxx:roughnessBiasedA2.xxx:NdotV:ambDomeColor.rgb:ambDomeLinColor.rgb:diffEnvLin.rgb:specEnvLin.rgb:cSpecLin:baseUV:selfOccShadow";
 	string UIName = "DEBUG VIEW";
 	int UIOrder = 0;
 > = 0;
@@ -619,7 +619,7 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 			baseUV += finalTexOffset;
 
 			// store this value off, for pom soft shadowing
-			pomSsUV = -baseUV;
+			pomSsUV = baseUV;
 
 			// Lerp to bump mapping only if we are in between, transition section:
 
@@ -650,6 +650,11 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	// POM clipping, this doesn't work ... and I don't know how to do it properly.
 	//clip(baseUV);
 	//clip(1.0f - baseUV);
+
+	//if (baseUV.x < 0.0 || baseUV.x > 1.0 || baseUV.y < 0.0 || baseUV.y > 1.0)
+	//{
+		//discard;
+	//}
 
 	// texture maps and such
 	//baseColor, need to fetch it now so we can clip against albedo alpha channel
@@ -908,29 +913,22 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 			// To Do: make this a function call in parallax.sif
 
 			if (useParallaxOcclusionMapping && usePOMselfShadow)
-				
+				// this doesn't work well, not sure why exactly ... I mean it does something, but not what I'd expect.
+				// 1) it creates shadows, but they aren't as soft as I would have expected
+				// 2) they blow up (stepping artifacts) if the height is increased too much
+				//    - you could probably build an iterative loop and increase the number of steps
+				// 3) the length, amount and impact of details doesn't very well match non-soft
+				//    - I can probably sync them up better
+				//    - can add weighting per-step to make softer?
+				//    - maybe we could bias the miplevel?
+				//    - and I need to make adjustments to which paramters are used and how so the two are more similar usage
 				if (usePOMsoftShadow)
 				{
 					float3 lightDirTS = mul(lights[i].m_Direction.xyz, worldToTangent);
-					float2 lightRayTS = lightDirTS.xy * materialPomHeightScale;
 
-					// Compute the soft blurry shadows taking into account self-occlusion for 
-					// features of the height field:
-
-					float sh0 = heightMap.SampleGrad(SamplerAnisoWrap, pomSsUV, dx, dy).r;
-					float shA = (heightMap.SampleGrad(SamplerAnisoWrap, pomSsUV + lightRayTS * 0.88, dx, dy).r -sh0 - 0.88) * 1 * pomSoftShadowAmount;
-					float sh9 = (heightMap.SampleGrad(SamplerAnisoWrap, pomSsUV + lightRayTS * 0.77, dx, dy).r - sh0 - 0.77) * 2 * pomSoftShadowAmount;
-					float sh8 = (heightMap.SampleGrad(SamplerAnisoWrap, pomSsUV + lightRayTS * 0.66, dx, dy).r - sh0 - 0.66) * 4 * pomSoftShadowAmount;
-					float sh7 = (heightMap.SampleGrad(SamplerAnisoWrap, pomSsUV + lightRayTS * 0.55, dx, dy).r - sh0 - 0.55) * 6 * pomSoftShadowAmount;
-					float sh6 = (heightMap.SampleGrad(SamplerAnisoWrap, pomSsUV + lightRayTS * 0.44, dx, dy).r - sh0 - 0.44) * 8 * pomSoftShadowAmount;
-					float sh5 = (heightMap.SampleGrad(SamplerAnisoWrap, pomSsUV + lightRayTS * 0.33, dx, dy).r - sh0 - 0.33) * 10 * pomSoftShadowAmount;
-					float sh4 = (heightMap.SampleGrad(SamplerAnisoWrap, pomSsUV + lightRayTS * 0.22, dx, dy).r - sh0 - 0.22) * 12 * pomSoftShadowAmount;
-
-					// Compute the actual shadow strength:
-					selfOccShadow = max(max(max(max(max(max(shA, sh9), sh8), sh7), sh6), sh5), sh4);
-
-					// The previous computation overbrightens the image, let's adjust for that:
-					selfOccShadow = (1.0 - selfOccShadow) * 0.6 + 0.4;
+					float2 lightRayTS = ( float2(lightDirTS.x, lightDirTS.y) ) * materialPomHeightScale;					float h0 = 1 - heightMap.Sample(SamplerAnisoWrap, pomSsUV).r;
+					float h = h0;					h = min(1.0, 1 - heightMap.Sample(SamplerAnisoWrap, pomSsUV + 1.0 * lightRayTS).r);					h = min(h, 1 - heightMap.Sample(SamplerAnisoWrap, pomSsUV + 0.8 * lightRayTS).r);					h = min(h, 1 - heightMap.Sample(SamplerAnisoWrap, pomSsUV + 0.6 * lightRayTS).r);					h = min(h, 1 - heightMap.Sample(SamplerAnisoWrap, pomSsUV + 0.4 * lightRayTS).r);					h = min(h, 1 - heightMap.Sample(SamplerAnisoWrap, pomSsUV + 0.2 * lightRayTS).r);
+					selfOccShadow = 1.0 - saturate( (h0 - h) * selfOccStrength );
 				}
 
 				else
@@ -1170,7 +1168,7 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 #endif
 
 // Debug views
-//"o.m_Color.rgb:baseColorTex.rgb:baseColorTex.aaa:bColorLin.rgb:mColorLin.rgb:p.m_albedoRGBA.rgb:p.m_albedoRGBA.aaa:pbrMetalness.xxx:pbrRoughness.xxx:pbrAO.xxx:pbrCavity.xxx:baseNormalMap.xyz:normalRaw.xyz:F0.xxx:bClum.xxx:Ctint.rgb:Cspec0.rgb:diffuse.rgb:specular.rgb:pbrRoughness.xxx:roughA.xxx:roughA2.xxx:roughnessBiasedA.xxx:roughnessBiasedA2.xxx:NdotV:ambDomeColor.rgb:ambDomeLinColor.rgb:diffEnvLin.rgb:specEnvLin.rgb:cSpecLin:baseUV"
+//"o.m_Color.rgb:baseColorTex.rgb:baseColorTex.aaa:bColorLin.rgb:mColorLin.rgb:p.m_albedoRGBA.rgb:p.m_albedoRGBA.aaa:pbrMetalness.xxx:pbrRoughness.xxx:pbrAO.xxx:pbrCavity.xxx:baseNormalMap.xyz:normalRaw.xyz:F0.xxx:bClum.xxx:Ctint.rgb:Cspec0.rgb:diffuse.rgb:specular.rgb:pbrRoughness.xxx:roughA.xxx:roughA2.xxx:roughnessBiasedA.xxx:roughnessBiasedA2.xxx:NdotV:ambDomeColor.rgb:ambDomeLinColor.rgb:diffEnvLin.rgb:specEnvLin.rgb:cSpecLin:baseUV:selfOccShadow"
 #ifdef _MAYA_
 	if (g_DebugMode > 0)
 	{
@@ -1205,7 +1203,8 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 		if (g_DebugMode == 29) result = cSpecLin;
 		if (g_DebugMode == 30)
 		{
-			float3 uvColor = float3(0.0,0.0,0.0);
+			// why isn't this working???
+			float3 uvColor = float3(0.0, 0.0, 0.0);
 			if (baseUV.x < 0)
 				uvColor = float3(0, 1, 0); // output green 
 
@@ -1220,6 +1219,7 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 
 			float3 result = float4(uvColor.rgb, 1.0);
 		}
+		if (g_DebugMode == 31) result = selfOccShadow.xxx;
 	}
 #endif
 

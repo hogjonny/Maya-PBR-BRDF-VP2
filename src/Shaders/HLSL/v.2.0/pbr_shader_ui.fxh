@@ -641,7 +641,7 @@ https://pixelandpoly.com/ior.html
 /**
 @brief to do
 */
-#define HOG_PROPERTY_POM bool useParallaxOcclusionMapping				\
+#define HOG_PROPERTY_MATERIAL_USEPOM bool useParallaxOcclusionMapping	\
 <																		\
 	string UIGroup = HOG_GRP_PARA_OCC;									\
 	string UIName = HOG_MATERIAL_USEPOM;								\
@@ -665,7 +665,7 @@ https://pixelandpoly.com/ior.html
 /**
 @brief to do
 */
-#define HOG_PROPERTY_USEPOMSHDW bool usePOMselfShadow					\
+#define HOG_PROPERTY_MATERIAL_USEPOMSHDW bool usePOMselfShadow			\
 <																		\
 	string UIGroup = HOG_GRP_PARA_OCC;									\
 	string UIName = HOG_MATERIAL_USEPOMSHDW;							\
@@ -712,22 +712,8 @@ https://pixelandpoly.com/ior.html
 	float UIMin = 0.001;													\
 	float UISoftMax = 1.0;													\
 	float UIStep = 0.01;													\
-	int UIOrder = 193;														\
+	int UIOrder = 195;														\
 > = 0.09f;
-
-/**
-@brief to do
-*/
-#define HOG_PROPERTY_MATERIAL_POMOCCSTRENGTH float selfOccStrength			\
-<																			\
-	string UIGroup = HOG_GRP_PARA_OCC;										\
-	string UIName = HOG_MATERIAL_POMOCCSTRENGTH;							\
-	string UIWidget = "Slider";												\
-	float UIMin = 0.001;													\
-	float UISoftMax = 1.0;													\
-	float UIStep = 0.01;													\
-	int UIOrder = 194;														\
-> = 0.7f;
 
 /**
 @brief to do
@@ -736,8 +722,50 @@ https://pixelandpoly.com/ior.html
 <																		\
 	string UIGroup = HOG_GRP_PARA_OCC;									\
 	string UIName = HOG_MATERIAL_USEPOMSOFTSHDW;						\
-	int UIOrder = 192;													\
+	int UIOrder = 196;													\
 > = false;
+
+/**
+@Widget parallax shadow type pulldown
+@brief provides a pull down menu, to select the type of parallax occlusion shadowing
+*/
+#define HOG_PROPERTY_MATERIAL_POMSHDWTYPE int parallaxOccShadowType		\
+<																		\
+	string UIGroup = HOG_GRP_PARA_OCC;									\
+	string UIWidget = "Slider";											\
+	string UIFieldNames = "none:simple:weighted:stencil";				\
+	string UIName = HOG_MATERIAL_POMSHDWTYPE;							\
+	int UIOrder = 197;													\
+> = 1;
+
+/**
+@brief to do
+*/
+#define HOG_PROPERTY_MATERIAL_POMOCCSHDWSTRENGTH float selfOccShadowStrength				\
+<																							\
+	string UIGroup = HOG_GRP_PARA_OCC;														\
+	string UIName = HOG_MATERIAL_POMOCCSHDWSTR;												\
+	string UIWidget = "Slider";																\
+	float UIMin = 0.001;																	\
+	float UIMax = 1.0;																		\
+	float UIStep = 0.01;																	\
+	int UIOrder = 198;																		\
+> = 0.7f;
+
+/**
+@brief to do
+*/
+#define HOG_PROPERTY_MATERIAL_POMSHDWMULTI float pomShadowMultiplier						\
+<																							\
+	string UIGroup = HOG_GRP_PARA_OCC;														\
+	string UIName = HOG_MATERIAL_POMSHDWMULTI;												\
+	string UIWidget = "Slider";																\
+	float UIMin = 1.0;																		\
+	float UISoftMax = 3.0;																	\
+	float UIStep = 0.01;																	\
+	int UIOrder = 199;																		\
+> = 0.7f;
+
 
 /**
 @brief to do
@@ -750,7 +778,7 @@ https://pixelandpoly.com/ior.html
 	float UIMin = 0.001;													\
 	float UISoftMax = 1.0;													\
 	float UIStep = 0.01;													\
-	int UIOrder = 194;														\
+	int UIOrder = 200;														\
 > = 1.0f;
 
 // ---------------------------------------------

@@ -72,8 +72,10 @@ If a property name needs to be modified, it would be changed here without needin
 #define HOG_MATERIAL_USEPOM				"Use POM"
 #define HOG_MATERIAL_POMSCALE			"POM Height Scale"
 #define HOG_MATERIAL_USEPOMSHDW			"Use POM Shadows"
+#define HOG_MATERIAL_POMSHDWTYPE		"POM Shadow Type"
 #define HOG_MATERIAL_POMOCCOFFSET		"POM Occ Offset"
-#define HOG_MATERIAL_POMOCCSTRENGTH		"POM Occ Strength"
+#define HOG_MATERIAL_POMOCCSHDWSTR		"POM Occ Shadow Strength"
+#define HOG_MATERIAL_POMSHDWMULTI		"POM Shadow Multiplier"
 #define HOG_MATERIAL_USEPOMSOFTSHDW		"Use POM SoftShadows"
 #define HOG_MATERIAL_POMSOFTSHDWAMT		"POM SoftShadows Amt"
 

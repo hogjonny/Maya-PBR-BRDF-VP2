@@ -143,31 +143,44 @@ void OpacityClip(float opacity, float opacityMaskBias)
 	clip( opacity < opacityMaskBias ? -1:1 );
 }
 
+// define the string for the "Normals Params" UI group
+//#define MAYA_NORMALS_PARAMS_GRP = "Normal Params"
+// To Do: fix this stuff up to match conventions of other parameters, etc.
+// this means, propertyNames.fxh and such
+
 // ---------------------------------------------
 // string UIGroup = "Normals Flipping"; UI 200+
 // ---------------------------------------------
-#define MAYA_DEBUG_NORMALX int NormalCoordsysX		\
-<													\
-	string UIGroup = "Normals Flipping";			\
-	string UIFieldNames = "Positive:Negative";		\
-	string UIName = "Normal X (Red) [*]";			\
-	int UIOrder = 207;								\
+#define MAYA_DEBUG_NORMALX int NormalCoordsysX			\
+<														\
+	string UIGroup = "Normal Params";					\
+	string UIFieldNames = "Positive:Negative";			\
+	string UIName = "Normal X (Red) [*]";				\
+	int UIOrder = 207;									\
 > = 0;
 
-#define MAYA_DEBUG_NORMALY int NormalCoordsysY		\
-<													\
-	string UIGroup = "Normals Flipping";			\
-	string UIFieldNames = "Positive:Negative";		\
-	string UIName = "Normal Y (Green) [*]";			\
-	int UIOrder = 208;								\
+#define MAYA_DEBUG_NORMALY int NormalCoordsysY			\
+<														\
+	string UIGroup = "Normal Params";					\
+	string UIFieldNames = "Positive:Negative";			\
+	string UIName = "Normal Y (Green) [*]";				\
+	int UIOrder = 208;									\
 > = 0;
 
-#define MAYA_DEBUG_NORMALZ int NormalCoordsysZ		\
-<													\
-	string UIGroup = "Normals Flipping";			\
-	string UIFieldNames = "Positive:Negative";		\
-	string UIName = "Normal Z (Blue) [*]";			\
-	int UIOrder = 209;								\
+#define MAYA_DEBUG_NORMALZ int NormalCoordsysZ			\
+<														\
+	string UIGroup = "Normal Params";					\
+	string UIFieldNames = "Positive:Negative";			\
+	string UIName = "Normal Z (Blue) [*]";				\
+	int UIOrder = 209;									\
 > = 0;
+
+// flips back facing normals to improve lighting for things like sheets of hair or leaves
+#define MAYA_FLIP_BACKFACE bool flipBackfaceNormals		\
+<														\
+	string UIGroup = "Normal Params";					\
+	string UIName = "Double Sided Lighting";			\
+	int UIOrder = 210;									\
+> = true;
 
 #endif //_MAYAUTILITIES_FXH_

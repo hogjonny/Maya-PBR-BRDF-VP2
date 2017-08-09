@@ -14,7 +14,7 @@
 // some textures may override this value, but most textures will follow whatever we have defined here
 // If you wish to optimize performance (at the cost of reduced quality), you can set NumberOfMipMaps below to 1
 
-static const float cg_PI = 3.141592f;
+static const float cg_PI = 3.141592666f;
 
 #define NumberOfMipMaps 0
 #define ROUGHNESS_BIAS 0.005
@@ -232,19 +232,21 @@ cbuffer UpdatePerObject : register(b1)
 	HOG_PROPERTY_MATERIAL_POMHEIGHTSCALE
 	// usePOMselfShadow:			bool
 	//HOG_PROPERTY_MATERIAL_USEPOMSHDW
-	// parallaxOccShadowType:		int
-	HOG_PROPERTY_MATERIAL_POMSHDWTYPE
 	// pomMinSamples:				float
 	HOG_PROPERTY_MATERIAL_POMMINSAMPLES
 	// pomMaxSamples:				float
 	HOG_PROPERTY_MATERIAL_POMMAXSAMPLES
 	// selfOccOffset:				float
-	HOG_PROPERTY_MATERIAL_POMOCCOFFSET  
-	// selfOccStrength:				float
-	HOG_PROPERTY_MATERIAL_POMOCCSTRENGTH  
+	HOG_PROPERTY_MATERIAL_POMOCCOFFSET
+	// parallaxOccShadowType:		int
+	HOG_PROPERTY_MATERIAL_POMSHDWTYPE
+	// selfOccShadowStrength:		float
+	HOG_PROPERTY_MATERIAL_POMOCCSHDWSTRENGTH
 	// usePOMsoftShadow:			bool
-	HOG_PROPERTY_USEPOMSOFTSHDW	  
-	// pomSoftShadowAmount:				float
+	//HOG_PROPERTY_USEPOMSOFTSHDW	  
+	// pomShadowMultiplier:			float
+	HOG_PROPERTY_MATERIAL_POMSHDWMULTI
+	// pomSoftShadowAmount:			float
 	HOG_PROPERTY_MATERIAL_POMSOFTSHDWAMT  
 
 	// "Lighting Properties"
@@ -310,7 +312,7 @@ int g_DebugMode
 <
 	string UIGroup = "DEBUG [Preview]";
 	string UIWidget = "Slider";
-	string UIFieldNames = "o.m_Color.rgb:baseColorTex.rgb:baseColorTex.aaa:bColorLin.rgb:mColorLin.rgb:p.m_albedoRGBA.rgb:p.m_albedoRGBA.aaa:pbrMetalness.xxx:pbrRoughness.xxx:pbrAO.xxx:pbrCavity.xxx:baseNormalMap.xyz:normalRaw.xyz:F0.xxx:bClum.xxx:Ctint.rgb:Cspec0.rgb:diffuse.rgb:specular.rgb:pbrRoughness.xxx:roughA.xxx:roughA2.xxx:roughnessBiasedA.xxx:roughnessBiasedA2.xxx:NdotV:ambDomeColor.rgb:ambDomeLinColor.rgb:diffEnvLin.rgb:specEnvLin.rgb:cSpecLin:baseUV:selfOccShadow";
+	string UIFieldNames = "o.m_Color.rgb:baseColorTex.rgb:baseColorTex.aaa:bColorLin.rgb:mColorLin.rgb:p.m_albedoRGBA.rgb:p.m_albedoRGBA.aaa:pbrMetalness.xxx:pbrRoughness.xxx:pbrAO.xxx:pbrCavity.xxx:baseNormalMap.xyz:normalRaw.xyz:F0.xxx:bClum.xxx:Ctint.rgb:Cspec0.rgb:diffuse.rgb:specular.rgb:pbrRoughness.xxx:roughA.xxx:roughA2.xxx:roughnessBiasedA.xxx:roughnessBiasedA2.xxx:NdotV:ambDomeColor.rgb:ambDomeLinColor.rgb:diffEnvLin.rgb:specEnvLin.rgb:cSpecLin:baseUV:selfOccShadow:triplanarXYZ";
 	string UIName = "DEBUG VIEW";
 	int UIOrder = 0;
 > = 0;
@@ -370,6 +372,8 @@ struct VsOutput
 	float4 m_View			: TEXCOORD2_centroid;
 	float3x3 m_TWMtx		: TEXCOORD3_centroid;
 	//float3x3 m_WTMtx		: TEXCOORD8_centroid;
+
+	// should I convert these to float4!?
 	float3 m_NormalW		: TEXCOORD6;
 	float3 m_TangentW		: TEXCOORD7;
 	float3 m_BinormalW		: TEXCOORD8;
@@ -387,12 +391,12 @@ VsOutput vsMain(vsInput v)
 
 	//OUT.eye = normalize(mul(World, v.m_Position) - mul(viewInv, float4(0,0,0,1))).xyz;
 
-	OUT.m_Position = mul(float4(v.m_Position, 1.0f), WorldViewProj);
+	OUT.m_Position = mul( float4( v.m_Position, 1.0f ), WorldViewProj );
 
 	//OUT.m_NormalW = normalize(mul(v.m_Normal, WorldIT));
-	OUT.m_NormalW = normalize(mul(v.m_Normal, World));
-	OUT.m_TangentW = normalize(mul(v.m_Tangent, World));
-	OUT.m_BinormalW = normalize(mul(v.m_Binormal, World));
+	OUT.m_NormalW   = normalize( mul( v.m_Normal,   (float3x3)World));
+	OUT.m_TangentW  = normalize( mul( v.m_Tangent,  (float3x3)World));
+	OUT.m_BinormalW = normalize (mul( v.m_Binormal, (float3x3)World));
 
 	// we pass vertices in world space
 	OUT.m_WorldPosition = mul(float4(v.m_Position, 1), World);
@@ -439,7 +443,7 @@ VsOutput vsMain(vsInput v)
 	tLocal[2] = v.m_Normal;
 
 	// Calculate the tangent to world space matrix
-	OUT.m_TWMtx = mul(tLocal, (float3x3)World);
+	OUT.m_TWMtx = mul (tLocal, (float3x3)World );
 
 	// world space to tangent matrix?
 	//OUT.m_WTMtx = transpose(tLocal);
@@ -464,7 +468,7 @@ struct PsOutput  // was APPDATA
 @return PsOutput Results written to the rendering target
 @param[in] p Input from the interpolation units
 */
-PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
+PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace) : SV_Target
 {
 	PsOutput o;
 
@@ -480,17 +484,19 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	// and: https://www.gamedev.net/articles/programming/graphics/a-closer-look-at-parallax-occlusion-mapping-r3262
 	// with help from:  http://www.d3dcoder.net/Data/Resources/ParallaxOcclusion.pdf
 	// To Do: Put all of this in a function and include file (after it is working)
-	float2 baseUV = p.m_Uv0;
-	float2 pomSsUV = baseUV;
+	float2 baseUV = p.m_Uv0.xy;
+	float2 pomSsUV = baseUV.xy;
 
 	// Parallax Mapping
 	// Parallax Releif Mapping
 	// http://sunandblackcat.com/tipFullView.php?topicid=28
 
 	// these are also later used in POM self-occlusion
-	float lastSampledHeight = 1;
-	float zStepSize = 0.0;
-	float2 finalTexOffset = 0;
+	float lastSampledHeight = 1.0f;
+	float zStepSize = 0.0f;
+	float2 finalTexOffset = float2(0.0f, 0.0f);
+
+	// store the worldToTangent matrix, but we will only calculate it where we use it
 	float3x3 worldToTangent;
 
 	// To Do: expose these in the UI
@@ -499,151 +505,161 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	bool pomVisualizeLOD = false;
 	int pomLODThreshold = 3;
 	float2 pomTextureDimensions = float2(1024, 1024);
-	float  minTexCoordDelta;
-	float2 deltaTexCoords;
+	float  minTexCoordDelta = 0.0f;
+	float2 deltaTexCoords = float2(0.0f, 0.0f);
 
 	// store gradients
-	float2 dxSize, dySize;
-	float2 dx, dy;
+	float2 dxSize = float2(0.0f, 0.0f);
+	float2 dySize = float2(0.0f, 0.0f);
+	float2 dx = float2(0.0f, 0.0f);
+	float2 dy = float2(0.0f, 0.0f);
+
 	// Compute the current gradients:
-	float2 texCoordsPerSize = baseUV * pomTextureDimensions;
+	float2 texCoordsPerSize = float2(baseUV.xy * pomTextureDimensions.xy);
+
 	// Compute all 4 derivatives in x and y in a single instruction to optimize:
 	float4(dxSize, dx) = ddx(float4(texCoordsPerSize, baseUV));
 	float4(dySize, dy) = ddy(float4(texCoordsPerSize, baseUV));
 
-	float  pomMipLevel;
-	float  pomMipLevelInt;    // mip level integer portion
-	float  pomMipLevelFrac;   // mip level fractional amount for blending in between levels
+	float  pomMipLevel = 0.0f;
+	float  pomMipLevelInt = 0.0f;    // mip level integer portion
+	float  pomMipLevelFrac = 0.0f;   // mip level fractional amount for blending in between levels
 
 	// Multiplier for visualizing the level of detail (see notes for 'nLODThreshold' variable
 	// for how that is done visually)
-	float4 pomLODColoring = float4(1, 1, 3, 1);
+	float4 pomLODColoring = float4( 0.0f, 0.0f, 0.0f, 0.0f);
 
 	if (useParallaxOcclusionMapping)
-	// To Do: make this a function call in parallax.sif
-	// POM self shadowing
-	// POM Clipping
-	{
+		pomLODColoring = float4(0.0f, 0.0f, 0.0f, 0.0f);
 
-		// Precompute texture gradients since we cannot compute texture
-		// gradients in a loop. Texture gradients are used to select the right
-		// mipmap level when sampling textures. Then we use Texture2D.SampleGrad()
-		// instead of Texture2D.Sample().
-		//dx = ddx(baseUV);
-		//dy = ddy(baseUV);
-
-		// Find min of change in u and v across quad: compute du and dv magnitude across quad
-		deltaTexCoords = dxSize * dxSize + dySize * dySize;
-
-		// Standard mipmapping uses max here
-		minTexCoordDelta = max(deltaTexCoords.x, deltaTexCoords.y);
-
-		// Compute the current mip level  (* 0.5 is effectively computing a square root before )
-		pomMipLevel = max( 0.5f * log2( minTexCoordDelta ), 0.0f);
-
-		if (pomMipLevel <= (float)pomLODThreshold)
+		// To Do: make this a function call in parallax.sif
+		// POM self shadowing
+		// POM Clipping
 		{
-			float3 viewDirW = -p.m_View.xyz;
-			//float3 viewDirTS = mul(viewDirW, p.m_WTMtx);
 
-			// Build orthonormal basis.
-			// Interpolating normal can unnormalize it, so normalize it.
-			p.m_NormalW = normalize(p.m_NormalW);
+			// Precompute texture gradients since we cannot compute texture
+			// gradients in a loop. Texture gradients are used to select the right
+			// mipmap level when sampling textures. Then we use Texture2D.SampleGrad()
+			// instead of Texture2D.Sample().
+			//dx = ddx(baseUV);
+			//dy = ddy(baseUV);
 
-			// T
-			worldToTangent[0] = normalize(p.m_TangentW - dot(p.m_TangentW, p.m_NormalW) * p.m_NormalW);
-			// B
-			//worldToTangent[1] = cross(p.m_NormalW, worldToTangent[0]);
-			worldToTangent[1] = -p.m_BinormalW;  // had to -, why!?
-			// N
-			worldToTangent[2] = p.m_NormalW;
+			// Find min of change in u and v across quad: compute du and dv magnitude across quad
+			deltaTexCoords = float2(dxSize.xy * dxSize.xy + dySize.xy * dySize.xy);
 
-			worldToTangent = transpose(worldToTangent);
+			// Standard mipmapping uses max here
+			minTexCoordDelta = float( max (deltaTexCoords.x, deltaTexCoords.y ) );
 
-			float3 viewDirTS = mul(viewDirW, worldToTangent);
+			// Compute the current mip level  (* 0.5 is effectively computing a square root before )
+			pomMipLevel = max( 0.5f * log2( minTexCoordDelta ), 0.0f);
 
-			float2 maxParallaxOffset = -viewDirTS.xy * materialPomHeightScale / viewDirTS.z;
-
-			// sampleCount
-			int pomNumSamples = (int)lerp(pomMinSamples, pomMaxSamples, dot(p.m_View.xyz, p.m_NormalW));
-
-			// zStep
-			zStepSize = 1.0 / (float)pomNumSamples;
-
-			// texStep
-			float2 vMaxOffset = maxParallaxOffset * zStepSize;
-
-			// sampleIndex
-			int currSampleIndex = 0;
-
-			float2 currTexOffset = 0;
-			float2 prevTexOffset = 0;
-			float currRayZ = 1.0f - zStepSize;
-			float prevRayZ = 1.0f;
-			float currHeight = 0.0f;
-			float prevHeight = 0.0f;
-
-			// Ray trace the heightfield.
-			while (currSampleIndex < pomNumSamples + 1)
+			if (pomMipLevel <= (float)pomLODThreshold)
 			{
-				// fetch height
-				currHeight = heightMap.SampleGrad(SamplerAnisoWrap, baseUV + currTexOffset, dx, dy).r;
+				float3 viewDirW = -p.m_View.xyz;
+				//float3 viewDirTS = mul(viewDirW, p.m_WTMtx);
 
-				// Did we cross the height profile?
-				if (currHeight > currRayZ)
+				// Build orthonormal basis.
+				// Interpolating normal can unnormalize it, so normalize it.
+				p.m_NormalW = normalize( p.m_NormalW );
+				p.m_TangentW = normalize( p.m_TangentW );
+				p.m_BinormalW = normalize( p.m_BinormalW );
+
+				// build world to tangent matrix
+				// I think this can be moved to the vertex shader, as long as we normalize when used?
+				// T
+				worldToTangent[0] = normalize(p.m_TangentW - dot(p.m_TangentW, p.m_NormalW) * p.m_NormalW);
+				// B
+				//worldToTangent[1] = cross(p.m_NormalW, worldToTangent[0]);
+				worldToTangent[1] = -p.m_BinormalW;  // had to -, why!?
+				// N
+				worldToTangent[2] = p.m_NormalW;
+
+				worldToTangent = transpose(worldToTangent);
+
+				float3 viewDirTS = normalize( mul( viewDirW.xyz, (float3x3)worldToTangent ) );
+
+				float2 maxParallaxOffset = -viewDirTS.xy * (float)materialPomHeightScale / viewDirTS.z;
+
+				// sampleCount
+				int pomNumSamples = (int)lerp(pomMinSamples, pomMaxSamples, dot(p.m_View.xyz, p.m_NormalW));
+
+				// zStep
+				zStepSize = 1.0f / (float)pomNumSamples;
+
+				// texStep
+				float2 vMaxOffset = float2(maxParallaxOffset.xy * (float)zStepSize);
+
+				// sampleIndex
+				int currSampleIndex = 0;
+
+				float2 currTexOffset = float2( 0.0f, 0.0f );
+				float2 prevTexOffset = float2(0.0f, 0.0f);
+				float currRayZ = 1.0f - (float)zStepSize;
+				float prevRayZ = 1.0f;
+				float currHeight = 0.0f;
+				float prevHeight = 0.0f;
+
+				// Ray trace the heightfield.
+				while ( (int)currSampleIndex < (int)pomNumSamples + (int)1 )
 				{
-					// Do ray/line segment intersection and compute final tex offset.
-					float t = (prevHeight - prevRayZ) /
-						(prevHeight - currHeight + currRayZ - prevRayZ);
+					// fetch height
+					currHeight = (float)heightMap.SampleGrad( SamplerAnisoWrap, float2(baseUV.xy + currTexOffset.xy), (float2)dx, (float2)dy).r;
 
-					finalTexOffset = prevTexOffset + t * vMaxOffset;
+					// Did we cross the height profile?
+					if (currHeight > currRayZ)
+					{
+						// Do ray/line segment intersection and compute final tex offset.
+						float t = (prevHeight - prevRayZ) /
+							(prevHeight - currHeight + currRayZ - prevRayZ);
 
-					lastSampledHeight = prevHeight + t * vMaxOffset;
+						finalTexOffset = prevTexOffset + t * vMaxOffset;
 
-					// Exit loop.
-					currSampleIndex = pomNumSamples + 1;
+						lastSampledHeight = prevHeight + t * vMaxOffset;
+
+						// Exit loop.
+						currSampleIndex = pomNumSamples + 1;
+					}
+					else
+					{
+						++currSampleIndex;
+						prevTexOffset = currTexOffset;
+						prevRayZ = currRayZ;
+						prevHeight = currHeight;
+						currTexOffset += vMaxOffset;
+						// Negative because we are going "deeper" into the surface.
+						currRayZ -= zStepSize;
+
+						lastSampledHeight = currHeight;
+					}
 				}
-				else
+				// Use these texture coordinates for subsequent texture
+				// fetches (color map, normal map, etc.).
+				baseUV += finalTexOffset.xy;
+
+				// store this value off, for pom soft shadowing
+				pomSsUV = baseUV;
+
+				// Lerp to bump mapping only if we are in between, transition section:
+
+				pomLODColoring = float4(1, 1, 1, 1);
+
+				if (pomMipLevel > (float)(pomLODThreshold - 1))
 				{
-					++currSampleIndex;
-					prevTexOffset = currTexOffset;
-					prevRayZ = currRayZ;
-					prevHeight = currHeight;
-					currTexOffset += vMaxOffset;
-					// Negative because we are going "deeper" into the surface.
-					currRayZ -= zStepSize;
+					// Lerp based on the fractional part:
+					pomMipLevelFrac = modf(pomMipLevel, pomMipLevelInt);
 
-					lastSampledHeight = currHeight;
+					if (pomVisualizeLOD)
+					{
+						// For visualizing: lerping from regular POM-resulted color through blue color for transition layer:
+						pomLODColoring = float4(1, 1, max(1, 2 * pomMipLevelFrac), 1);
+					}
+
+					// Lerp the texture coordinate from parallax occlusion mapped coordinate to bump mapping
+					// smoothly based on the current mip level:
+					baseUV = lerp(baseUV, p.m_Uv0, pomMipLevelFrac);
 				}
-			}
-			// Use these texture coordinates for subsequent texture
-			// fetches (color map, normal map, etc.).
-			baseUV += finalTexOffset;
-
-			// store this value off, for pom soft shadowing
-			pomSsUV = baseUV;
-
-			// Lerp to bump mapping only if we are in between, transition section:
-
-			pomLODColoring = float4(1, 1, 1, 1);
-
-			if (pomMipLevel > (float)(pomLODThreshold - 1))
-			{
-				// Lerp based on the fractional part:
-				pomMipLevelFrac = modf(pomMipLevel, pomMipLevelInt);
-
-				if (pomVisualizeLOD)
-				{
-					// For visualizing: lerping from regular POM-resulted color through blue color for transition layer:
-					pomLODColoring = float4(1, 1, max(1, 2 * pomMipLevelFrac), 1);
-				}
-
-				// Lerp the texture coordinate from parallax occlusion mapped coordinate to bump mapping
-				// smoothly based on the current mip level:
-				baseUV = lerp(baseUV, p.m_Uv0, pomMipLevelFrac);
 			}
 		}
-	}
 
 	// Parallax Mapping and Self-Shadowing
 	// // http://sunandblackcat.com/tipFullView.php?topicid=28
@@ -678,50 +694,58 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	}
 
 	// setup Gamma Corrention
-	float gammaCorrectionExponent = linearSpaceLighting ? gammaCorrectionValue : 1.0;
+	float gammaCorrectionExponent = linearSpaceLighting ? gammaCorrectionValue : 1.0f;
+
+	// most textures in this shaders setup, are considered single channel
+	// not sure what happens if say an sRGB image is loaded instead!
 
 	// roughnessMap:			Texture2D
-	float pbrRoughness = 0.0f;
-	float roughnessTex = roughnessMap.Sample(SamplerAnisoWrap, baseUV).g;
-	if (roughnessTex > 0)
-		pbrRoughness = roughnessTex;
-	pbrRoughness = lerp(float(0.0f).xxx, pbrRoughness, materialRoughness);
+	float pbrRoughness = 0.0f;  // store it here
+	// fetch the texture, hopefully this works with 3-channel sRGB and 1-channel linear (better validate)
+	// in the case that it is a 3-channel DXT, we pull the green (highest bit-depth)!
+	float3 roughnessTex = roughnessMap.Sample(SamplerAnisoWrap, baseUV.xy).rgb;
+	// assume you want the value black (empty) unless a texture is mapped
+	if (roughnessTex.g > 0.0f)
+		pbrRoughness = roughnessTex.g;
+	// this lets you load a full-range map, then use the material override to scale the value
+	pbrRoughness = lerp( 0.0f, pbrRoughness, materialRoughness);
 
 
 	// metalnessMap:			Texture2D
 	float pbrMetalness = 0.0f;
-	float metalnessTex = metalnessMap.Sample(SamplerAnisoWrap, baseUV).g;
-	if (metalnessTex > 0)
-		pbrMetalness = metalnessTex;
-	pbrMetalness = lerp(float(0.0f).xxx, pbrMetalness, materialMetalness);
+	float3 metalnessTex = metalnessMap.Sample(SamplerAnisoWrap, baseUV.xy).rgb;
+	if (metalnessTex.g > 0.0f)
+		pbrMetalness = metalnessTex.g;
+	pbrMetalness = lerp( 0.0f, pbrMetalness, materialMetalness);
 
 	// specularF0Map:			Texture2D
-	float pbrSpecF0 = 0.0f;
-	float specF0Tex = specularF0Map.Sample(SamplerAnisoWrap, baseUV).g;
-	if (specF0Tex > 0)
-		pbrSpecF0 = specF0Tex;
+	// should I allow for colored f0?  <-- To Do
+	float3 pbrSpecF0 = float3( 0.04f, 0.04f, 0.04f);  // most materials are this range
+	float3 specF0Tex = specularF0Map.Sample(SamplerAnisoWrap, baseUV.xy).rgb;
+	if (specF0Tex.r > 0.0f | specF0Tex.g > 0.0f | specF0Tex.b > 0.0f)
+		pbrSpecF0.rgb = specF0Tex.rgb;
 
 	// specularMap:				Texture2D
 	float pbrSpecAmount = 0.0f;
-	float specAmountTex = specularMap.Sample(SamplerAnisoWrap, baseUV);
+	float specAmountTex = specularMap.Sample(SamplerAnisoWrap, baseUV.xy).x;
 	if (specAmountTex > 0)
 		pbrSpecAmount = specAmountTex;
 	pbrSpecAmount = lerp(float(0.0f).xxx, pbrSpecAmount, materialSpecular);
 
 	// ambOccMap:				Texture2D
 	float pbrAmbOcc = 0.0f;
-	float ambOccTex = ambOccMap.Sample(SamplerAnisoWrap, baseUV);
+	float ambOccTex = ambOccMap.Sample(SamplerAnisoWrap, baseUV.xy).x;
 	if (ambOccTex > 0)
 		pbrAmbOcc = ambOccTex;
 
 	// cavityMap:				Texture2D
 	float pbrCavity = 0.0f;
-	float cavityTex = cavityMap.Sample(SamplerAnisoWrap, baseUV);
+	float cavityTex = cavityMap.Sample(SamplerAnisoWrap, baseUV.xy).x;
 	if (cavityTex > 0)
 		pbrCavity = cavityTex;
 
 	// emissiveMap:				Texture2D
-	float3 emissiveTex = emissiveMap.Sample(SamplerAnisoWrap, baseUV).rgb;
+	float3 emissiveTex = emissiveMap.Sample(SamplerAnisoWrap, baseUV.xy).rgb;
 	float3 pbrEmssive = emissiveTex.rgb;
 
 	// anisotropicMap:			Texture2D
@@ -757,6 +781,11 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 		nTS.y = -nTS.y;
 	if (NormalCoordsysZ > 0)
 		nTS.z = -nTS.z;
+
+	if (flipBackfaceNormals)
+	{
+		nTS = lerp(-nTS, nTS, FrontFace);
+	}
 
 	// Transform the normal into world space where the light data is
 	// Normalize proper normal lengths after decoding dxt normals and creating Z
@@ -797,26 +826,26 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	float3 mColorLin = bColorLin.rgb * (1.0f - pbrMetalness);
 
 	// F0 : Specular reflection coefficient (this is a scalar, not a color value!)
-	//non-metals are 3% reflective... approximately
+	// non-metals are 3% reflective... approximately
 	// if you were going to hard code something, this would be a good guess
-	//float3 F0 = lerp(float3(0.03, 0.03, 0.03), mColorLin, pbrMetalness);
+	// float3 F0 = lerp(float3(0.03, 0.03, 0.03), mColorLin, pbrMetalness);
 	// but some escoteric materials might have different rgb values for F0?
 
 	// If we want to replace this with an F0 input texture
 	// the conversion into color space is pow(F0, 1/2.2333 ) * 255;
-	// Not a bad idea, so we can have per-pixel F0 value changes
-	// Pretty sure this is what most engines do actually
 
 	// but lets not hard code it!
 	// IOR values: http://www.pixelandpoly.com/ior.html#C
 	// More IOR:  http://forums.cgsociety.org/archive/index.php?t-513458.html
 	// water has a IOR of 1.333, converted it's F0 is appox 0.02
 	//float3 F0 = abs(pow((1.0f - materialIOR), 2.0f) / pow((1.0f + materialIOR), 2.0f));
-	float F0 = abs((1.0f - materialIOR) / (1.0f + materialIOR));
-	F0 = F0 * F0;  // to the power of 2
+	float nF0 = abs( ( 1.0f - materialIOR ) / ( 1.0f + materialIOR ) );
+	float3 F0 = float3( nF0, nF0, nF0 );
+	(float3)F0 = float3( F0 * F0 );  // to the power of 2
 
-	if (pbrSpecF0 > 0)
-		F0 = pbrSpecF0;
+	// if we are using texture data, override
+	if ( pbrSpecF0.r > 0.0f | pbrSpecF0.g > 0.0f | pbrSpecF0.b > 0.0f)
+		F0.rgb = pbrSpecF0.rgb;
 
 	// Specular tint (from disney plausible)
 	//float3 bColorLin = albedo.rgb; // pass in color already converted to linear
@@ -825,20 +854,20 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	// materialSpecTint				scalar 0..1 (soft)
 
 	// luminance approx.
-	float bClum = 0.3f * bColorLin[0] + 0.6f * bColorLin[1] + 0.1f * bColorLin[2];
+	float bClum = 0.3f * (float)bColorLin[0] + 0.6f * (float)bColorLin[1] + 0.1f * (float)bColorLin[2];
 	// normalize lum. to isolate hue+sat
 	float3 Ctint = bClum > 0.0f ? bColorLin / bClum : 1.0f.xxx;
 
 	// calculate the colored specular F0
-	float3 Cspec0 = lerp(materialSpecular * F0 * lerp(1.0f.xxx, Ctint, materialSpecTint), bColorLin, pbrMetalness);
+	float3 Cspec0 = lerp( (float)materialSpecular * F0.rgb * lerp( (float3)1.0f, Ctint.rgb, (float)materialSpecTint), bColorLin.rgb, (float)pbrMetalness);
 
 	// build variations of roughness
-	float pbrRoughnessBiased = pbrRoughness * (1.0 - ROUGHNESS_BIAS) + ROUGHNESS_BIAS;
+	float pbrRoughnessBiased = (float)pbrRoughness * (1.0f - ROUGHNESS_BIAS) + ROUGHNESS_BIAS;
 	float roughA = pbrRoughness * pbrRoughness;
 	float roughA2 = roughA * roughA;
 
 	// build roughness biased
-	float roughnessBiasedA = roughA * (1.0 - ROUGHNESS_BIAS) + ROUGHNESS_BIAS;
+	float roughnessBiasedA = roughA * (1.0f - ROUGHNESS_BIAS) + ROUGHNESS_BIAS;
 	float roughnessBiasedA2 = roughnessBiasedA * roughnessBiasedA;
 
 	// This won't change per-light so calulate it outside of the loop
@@ -846,9 +875,9 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	// constant to prevent NaN
 	//float NdotV = max(dot(n, p.m_View.xyz), 1e-5);	
 	// Avoid artifact - Ref: SIGGRAPH14 - Moving Frosbite to PBR
-	float NdotV = abs(dot(n, p.m_View.xyz)) + EPSILON;
+	float NdotV = abs( dot( n.xyz, p.m_View.xyz ) ) + EPSILON;
 
-	//going to just use a constant value for shadow instead (to disregard)
+	// shadow storage
 	float4 shadow = (1.0f, 1.0f, 1.0f, 1.0f);
 	float selfOccShadow = 1.0;
 
@@ -906,8 +935,10 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 			if (useShadows && lights[i].m_LightShadowOn)
 			{
 				shadow = lightShadow(i, lights[i].m_LightViewPrj, SamplerShadowDepth, p.m_WorldPosition.xyz, shadowMultiplier, shadowDepthBias);
-				diffuse *= shadow;
-				specular *= shadow;
+
+				// moving this out, so we can combine the cast shadow with parallax occ self-shadowing
+				//diffuse *= shadow;
+				//specular *= shadow;
 			}
 
 			// Parallax Occlusion Self-Shadowing
@@ -928,7 +959,7 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 				{
 					if (parallaxOccShadowType == 1)
 					{
-						float3 lightDirTS = mul(lights[i].m_Direction.xyz, worldToTangent);
+						float3 lightDirTS = normalize( mul( lights[i].m_Direction.xyz, (float3x3)worldToTangent) );
 
 						float2 lightRayTS = (float2(lightDirTS.x, lightDirTS.y)) * materialPomHeightScale;
 
@@ -941,16 +972,17 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 						h = min(h, 1 - heightMap.Sample(SamplerAnisoWrap, pomSsUV + 0.4 * lightRayTS).r);
 						h = min(h, 1 - heightMap.Sample(SamplerAnisoWrap, pomSsUV + 0.2 * lightRayTS).r);
 
-						selfOccShadow = 1.0 - saturate((h0 - h) * selfOccStrength);
+						selfOccShadow = lerp( -pomShadowMultiplier, 1.0, 1.0 - ( saturate( (h0 - h) * selfOccShadowStrength ) ) );
 					}
 					if (parallaxOccShadowType == 2)
 					{
 						//
 					}
-
+						
+					//if (NdotL > 0)
 					if (parallaxOccShadowType == 3)
 					{
-						float3 lightDirTS = mul(lights[i].m_Direction.xyz, worldToTangent);
+						float3 lightDirTS = normalize( mul( lights[i].m_Direction.xyz, (float3x3)worldToTangent) );
 
 						float occlusionLimit = length(lightDirTS.xy) / lightDirTS.z;
 						occlusionLimit *= materialPomHeightScale;
@@ -975,7 +1007,7 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 							fCurrSampledHeightOcclusion = heightMap.SampleGrad(SamplerAnisoWrap, p.m_Uv0 + vCurrOffsetOcclusion, dx, dy).r;
 							if (fCurrSampledHeightOcclusion > fCurrRayHeightOcclusion)
 							{
-								selfOccShadow = 1.0 - selfOccStrength;
+								selfOccShadow = lerp(-pomShadowMultiplier, 1.0, 1.0 - selfOccShadowStrength);
 
 								nCurrSampleOcclusion = nNumSamplesOcclusion + 1;
 							}
@@ -994,9 +1026,18 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 					}
 				}
 
-			diffuse *= selfOccShadow;
-			specular *= selfOccShadow;
+			// combine the self-shadow
+			//diffuse *= selfOccShadow;
+			//specular *= selfOccShadow;
+
+			// then lights cast shadow
+			//diffuse *= shadow;
+			//specular *= shadow;
+
+			diffuse *= shadow * selfOccShadow;
+			specular *= shadow * selfOccShadow;
 		}
+
 		else if (lights[i].m_Type == 3) //Point
 		{
 			// construct light direction
@@ -1068,6 +1109,7 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 			specular += (specular_term * lights[i].m_Diffuse * lights[i].m_Intensity * NdotL);
 		}
 	}
+
 	// Set up envmap values
 	float3 diffEnvLin = (0.0f, 0.0f, 0.0f);
 	float3 specEnvLin = (0.0f, 0.0f, 0.0f);
@@ -1154,12 +1196,6 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 
 	float3 result = o.m_Color.rgb * transperancy;
 
-	// do gamma correction in shader:
-	//if (!MayaFullScreenGamma)
-		//if (useGammaCorrectShader)
-			//// this might need to be here with tonemapping?
-			//result = pow(result, 1 / gammaCorrectionExponent);
-
 #ifdef _MAYA_
 	// do gamma correction and tone mapping in shader:
 	// "none:approx:linear:linearExp:reinhard:reinhardExp:HaarmPeterCurve:HaarmPeterCurveExp:uncharted2FilmicTonemapping:uncharted2FilmicTonemappingExp"
@@ -1183,11 +1219,9 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 			}
 		}
 	}
-#endif
 
 // Debug views
-//"o.m_Color.rgb:baseColorTex.rgb:baseColorTex.aaa:bColorLin.rgb:mColorLin.rgb:p.m_albedoRGBA.rgb:p.m_albedoRGBA.aaa:pbrMetalness.xxx:pbrRoughness.xxx:pbrAO.xxx:pbrCavity.xxx:baseNormalMap.xyz:normalRaw.xyz:F0.xxx:bClum.xxx:Ctint.rgb:Cspec0.rgb:diffuse.rgb:specular.rgb:pbrRoughness.xxx:roughA.xxx:roughA2.xxx:roughnessBiasedA.xxx:roughnessBiasedA2.xxx:NdotV:ambDomeColor.rgb:ambDomeLinColor.rgb:diffEnvLin.rgb:specEnvLin.rgb:cSpecLin:baseUV:selfOccShadow"
-#ifdef _MAYA_
+//"o.m_Color.rgb:baseColorTex.rgb:baseColorTex.aaa:bColorLin.rgb:mColorLin.rgb:p.m_albedoRGBA.rgb:p.m_albedoRGBA.aaa:pbrMetalness.xxx:pbrRoughness.xxx:pbrAO.xxx:pbrCavity.xxx:baseNormalMap.xyz:normalRaw.xyz:F0.xxx:bClum.xxx:Ctint.rgb:Cspec0.rgb:diffuse.rgb:specular.rgb:pbrRoughness.xxx:roughA.xxx:roughA2.xxx:roughnessBiasedA.xxx:roughnessBiasedA2.xxx:NdotV:ambDomeColor.rgb:ambDomeLinColor.rgb:diffEnvLin.rgb:specEnvLin.rgb:cSpecLin:baseUV:selfOccShadow:triplanarXYZ"
 	if (g_DebugMode > 0)
 	{
 		if (g_DebugMode == 1) result = baseColorTex.rgb;
@@ -1218,26 +1252,43 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 		if (g_DebugMode == 26) result = ambDomeLinColor.rgb;
 		if (g_DebugMode == 27) result = diffEnvLin.rgb;
 		if (g_DebugMode == 28) result = specEnvLin.rgb;
-		if (g_DebugMode == 29) result = cSpecLin;
+		if (g_DebugMode == 29) result = cSpecLin.rgb;
 		if (g_DebugMode == 30)
 		{
 			// why isn't this working???
-			float3 uvColor = float3(0.0, 0.0, 0.0);
+			float3 uvColor = float3(0.0f, 0.0f, 0.0f);
 			if (baseUV.x < 0)
-				uvColor = float3(0, 1, 0); // output green 
+				uvColor = float3(0.0f, 1.0f, 0.0f); // output green 
 
 			if (baseUV.y < 0)
-				uvColor = float3(0, 0, 1); // output blue
+				uvColor = float3(0.0f, 0.0f, 1.0f); // output blue
 
 			if (baseUV.x > 1)
-				uvColor = float3(1, 0, 0); // output red
+				uvColor = float3(1.0f, 0.0f, 0.0f); // output red
 
 			if (baseUV.y > 1)
-				uvColor = float3(1, 0, 1); // output magenta
+				uvColor = float3(1.0f, 0.0f, 1.0f); // output magenta
 
-			float3 result = float4(uvColor.rgb, 1.0);
+			result = uvColor.rgb;
 		}
 		if (g_DebugMode == 31) result = selfOccShadow.xxx;
+		if (g_DebugMode == 32)
+		{
+			// tri-planar weighting
+			(float3)p.m_NormalW = normalize(p.m_NormalW);
+			float3 absNormal = abs(p.m_NormalW);
+
+			// (the numbers are the cosine of 35 and 55 degrees respectively)
+			float weightX = smoothstep(0.57357644, 0.81915204, (float3)absNormal.x);
+			float weightY = smoothstep(0.57357644, 0.81915204, (float3)absNormal.y);
+			float weightZ = smoothstep(0.57357644, 0.81915204, (float3)absNormal.z);
+			float3 triplanarweight = float3(weightX, weightY, weightZ);
+
+			// hmm ... this won't compile, see above as replacement ^
+			//float3 triplanarweight = (float3)smoothstep( float3(0.57357644), float3(0.81915204), (float3)absNormal );
+
+			result = triplanarweight.rgb;
+		}
 	}
 #endif
 
@@ -1246,11 +1297,11 @@ PsOutput pMain(VsOutput p, bool FrontFace : SV_IsFrontFace)
 	return o;
 }
 
+#ifdef _MAYA_
 /**
-move these functiosn into mayaUtilities.fxh
+move these function into mayaUtilities.fxh
 call them where they are needed
 */
-#ifdef _MAYA_
 void Peel(VsOutput v)
 {
 	float currZ = abs(mul(v.m_WorldPosition, view).z);
@@ -1310,6 +1361,7 @@ MultiOut2 fTransparentWeightedAvg(VsOutput v, bool FrontFace : SV_IsFrontFace)
 	return OUT;
 }
 
+
 //------------------------------------
 // wireframe pixel shader
 //------------------------------------
@@ -1333,13 +1385,13 @@ float4 ShadowMapPS(VsOutput v) : SV_Target
 		OpacityClip(hasAlpha, opacity, opacityMaskBias);
 	}
 
-float4 Pndc = mul(v.m_WorldPosition, viewPrj);
+	float4 Pndc = mul(v.m_WorldPosition, viewPrj);
 
-// divide Z and W component from clip space vertex position to get final depth per pixel
-float retZ = Pndc.z / Pndc.w;
+	// divide Z and W component from clip space vertex position to get final depth per pixel
+	float retZ = Pndc.z / Pndc.w;
 
-retZ += fwidth(retZ);
-return retZ.xxxx;
+	retZ += fwidth(retZ);
+	return retZ.xxxx;
 }
 #endif
 
@@ -1367,75 +1419,74 @@ return retZ.xxxx;
 @brief The technique set up for the FX framework
 */
 technique11 TessellationOFF
-<
-	bool overridesDrawState = false;	// we do not supply our own render state settings
-int isTransparent = 3;
-// which values trigger a transparecy test
-string transparencyTest = "opacity < 1.0 || hasAlpha || hasVertexAlpha";
+	<
+		bool overridesDrawState = false;	// we do not supply our own render state settings
+		int isTransparent = 3;
+		// which values trigger a transparecy test
+		string transparencyTest = "opacity < 1.0 || hasAlpha || hasVertexAlpha";
 
-#ifdef _MAYA_
-// Tells Maya that the effect supports advanced transparency algorithm,
-// otherwise Maya would render the associated objects simply by alpha
-// blending on top of other objects supporting advanced transparency
-// when the viewport transparency algorithm is set to depth-peeling or
-// weighted-average.
-bool supportsAdvancedTransparency = true;
-#endif
->
-{
-	pass P0
-		<
-		string drawContext = "colorPass";	// tell maya during what draw context this shader should be active, in this case 'Color'
-		>
+	#ifdef _MAYA_
+		// Tells Maya that the effect supports advanced transparency algorithm,
+		// otherwise Maya would render the associated objects simply by alpha
+		// blending on top of other objects supporting advanced transparency
+		// when the viewport transparency algorithm is set to depth-peeling or
+		// weighted-average.
+		bool supportsAdvancedTransparency = true;
+	#endif
+	>
 	{
-#ifdef _MAYA_
-		SetBlendState(PMAlphaBlending, float4(0.0f, 0.0f, 0.0f, 0.0f), 0xFFFFFFFF);
-#endif
-		SetVertexShader(CompileShader(vs_5_0, vsMain()));
-		SetPixelShader(CompileShader(ps_5_0, pMain()));
-	}
+		pass P0
+			<
+			string drawContext = "colorPass";	// tell maya during what draw context this shader should be active, in this case 'Color'
+			>
+			{
+	#ifdef _MAYA_
+				SetBlendState(PMAlphaBlending, float4(0.0f, 0.0f, 0.0f, 0.0f), 0xFFFFFFFF);
+	#endif
+				SetVertexShader(CompileShader(vs_5_0, vsMain()));
+				SetPixelShader(CompileShader(ps_5_0, pMain()));
+			}
 
+	#ifdef _MAYA_
 
-
-#ifdef _MAYA_
-
-		pass pTransparentPeel
+			pass pTransparentPeel
 			<
 			// Depth-peeling pass for depth-peeling transparency algorithm.
 			string drawContext = "transparentPeel";
 			>
-		{
-			SetVertexShader(CompileShader(vs_5_0, vsMain()));
-			SetPixelShader(CompileShader(ps_5_0, fTransparentPeel()));
-		}
+			{
+				SetVertexShader(CompileShader(vs_5_0, vsMain()));
+				SetPixelShader(CompileShader(ps_5_0, fTransparentPeel()));
+			}
 
 			pass pTransparentPeelAndAvg
-				<
-				// Weighted-average pass for depth-peeling transparency algorithm.
-				string drawContext = "transparentPeelAndAvg";
-				>
+			<
+			// Weighted-average pass for depth-peeling transparency algorithm.
+			string drawContext = "transparentPeelAndAvg";
+			>
 			{
 				SetVertexShader(CompileShader(vs_5_0, vsMain()));
 				SetPixelShader(CompileShader(ps_5_0, fTransparentPeelAndAvg()));
 			}
 
-				pass pTransparentWeightedAvg
-					<
-					// Weighted-average algorithm. No peeling.
-					string drawContext = "transparentWeightedAvg";
-					>
-				{
-					SetVertexShader(CompileShader(vs_5_0, vsMain()));
-					SetPixelShader(CompileShader(ps_5_0, fTransparentWeightedAvg()));
-				}
+			pass pTransparentWeightedAvg
+			<
+			// Weighted-average algorithm. No peeling.
+			string drawContext = "transparentWeightedAvg";
+			>
+			{
+				SetVertexShader(CompileShader(vs_5_0, vsMain()));
+				SetPixelShader(CompileShader(ps_5_0, fTransparentWeightedAvg()));
+			}
 
-					pass pShadow
-						<
-						string drawContext = "shadowPass";	// shadow pass
-						>
-					{
-						SetVertexShader(CompileShader(vs_5_0, vsMain()));
-						SetPixelShader(CompileShader(ps_5_0, ShadowMapPS()));
-					}
-#endif
-}
+			pass pShadow
+			<
+			string drawContext = "shadowPass";	// shadow pass
+			>
+			{
+				SetVertexShader(CompileShader(vs_5_0, vsMain()));
+				SetPixelShader(CompileShader(ps_5_0, ShadowMapPS()));
+			}
+	#endif
+	}
+

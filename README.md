@@ -5,7 +5,7 @@ What's new?
 - opacity (In maya you there are several alpha sorting methods with VP2, I think weighted average works best and depth peeling doesn't seem to work right most of the time)
 - vertex baked AO
 - I recently re-organize the properties
-- Exposure for IBL diffuse / specular (uses pre-convolved .dds lighting cubes.  (To Do: implement HDR source images for cubes. The intent is that this shader use all source art - your pipeline will, combine masks, swizzle channels, compress and crunch data into an optimized version if you are using this to create game art.)
+- Exposure for IBL diffuse / specular (uses pre-convolved .dds lighting cubes.)  (To Do: implement HDR source images for cubes. The intent is that this shader use all source art - your pipeline will, combine masks, swizzle channels, compress and crunch data into an optimized version if you are using this to create game art.)
 - in test I used IBL's generated with: https://github.com/derkreature/IBLBaker
 - and the shader ball is from: https://github.com/derkreature/ShaderBall
 
